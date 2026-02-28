@@ -15,7 +15,7 @@ import { toast } from 'sonner';
 import { Toaster } from './components/ui/sonner';
 
 // Icons
-import { ShoppingCart, User, Star, Package, Users, BarChart3, Ticket, Plus, Minus, CreditCard, LogOut, Menu, X, Search, Filter, ArrowRight, Mail, Phone, MapPin, HelpCircle, Trash2, Send } from 'lucide-react';
+import { ShoppingCart, User, Star, Package, Users, BarChart3, Ticket, Plus, Minus, CreditCard, LogOut, Menu, X, Search, Filter, ArrowRight, Mail, Phone, MapPin, HelpCircle, Trash2, Send, Heart, RefreshCw, Home, Tag } from 'lucide-react';
 
 // Import Auth component
 import Auth from './pages/Auth';
@@ -36,6 +36,9 @@ import ProductManagement from './components/admin/ProductManagement';
 import UserManagement from './components/admin/UserManagement';
 import OrderManagement from './components/admin/OrderManagement';
 import SupportTicketManagement from './components/admin/SupportTicketManagement';
+import AnalyticsDashboard from './components/admin/AnalyticsDashboard';
+import CouponManagement from './components/admin/CouponManagement';
+import AdminLayout from './components/admin/AdminLayout';
 
 // Import CheckoutPage
 import CheckoutPage from './components/CheckoutPage';
@@ -55,6 +58,9 @@ import OrderHistoryPage from './components/OrderHistoryPage';
 
 // Import Error Boundary
 import ErrorBoundary from './components/ErrorBoundary';
+
+// Import RecentlyViewed component
+import RecentlyViewed from './components/RecentlyViewed';
 
 // Auth Context
 const AuthContext = createContext();
@@ -250,7 +256,35 @@ const CartProvider = ({ children }) => {
     }
   }, [cartItems]);
 
-  const addToCart = (product, quantity = 1) => {
+  const { user } = useAuth();
+
+  useEffect(() => {
+    const loadCartFromBackend = async () => {
+      try {
+        const response = await axios.get(`${API}/api/cart`);
+        const items = response.data.map(ci => ({ product: ci.product, quantity: ci.quantity }));
+        // Keep local cart on refresh when backend cart is empty.
+        setCartItems(prev => (items.length > 0 ? items : prev));
+      } catch (e) {
+      }
+    };
+    if (user) {
+      loadCartFromBackend();
+    }
+  }, [user]);
+
+  const addToCart = async (product, quantity = 1) => {
+    if (user) {
+      try {
+        await axios.post(`${API}/api/cart/add`, { product_id: product.id, quantity });
+        const response = await axios.get(`${API}/api/cart`);
+        const items = response.data.map(ci => ({ product: ci.product, quantity: ci.quantity }));
+        setCartItems(items);
+        toast.success(`${product.name} added to cart!`);
+        return;
+      } catch (e) {
+      }
+    }
     setCartItems(prev => {
       const existingItem = prev.find(item => item.product.id === product.id);
       if (existingItem) {
@@ -265,14 +299,34 @@ const CartProvider = ({ children }) => {
     toast.success(`${product.name} added to cart!`);
   };
 
-  const removeFromCart = (productId) => {
+  const removeFromCart = async (productId) => {
+    if (user) {
+      try {
+        await axios.delete(`${API}/api/cart/${productId}`);
+        const response = await axios.get(`${API}/api/cart`);
+        const items = response.data.map(ci => ({ product: ci.product, quantity: ci.quantity }));
+        setCartItems(items);
+        return;
+      } catch (e) {
+      }
+    }
     setCartItems(prev => prev.filter(item => item.product.id !== productId));
   };
 
-  const updateQuantity = (productId, quantity) => {
+  const updateQuantity = async (productId, quantity) => {
     if (quantity <= 0) {
-      removeFromCart(productId);
+      await removeFromCart(productId);
       return;
+    }
+    if (user) {
+      try {
+        await axios.put(`${API}/api/cart/${productId}`, { quantity });
+        const response = await axios.get(`${API}/api/cart`);
+        const items = response.data.map(ci => ({ product: ci.product, quantity: ci.quantity }));
+        setCartItems(items);
+        return;
+      } catch (e) {
+      }
     }
     setCartItems(prev =>
       prev.map(item =>
@@ -281,7 +335,16 @@ const CartProvider = ({ children }) => {
     );
   };
 
-  const clearCart = () => {
+  const clearCart = async () => {
+    if (user) {
+      try {
+        await axios.post(`${API}/api/cart/clear`);
+        setCartItems([]);
+        localStorage.removeItem('shopmate_cart');
+        return;
+      } catch (e) {
+      }
+    }
     setCartItems([]);
     localStorage.removeItem('shopmate_cart');
   };
@@ -329,12 +392,27 @@ const Navigation = () => {
     setAuthState({ user, isAuthenticated: !!user });
   }, [user]);
 
+  useEffect(() => {
+    if (mobileMenuOpen) {
+      document.body.style.overflow = 'hidden';
+    } else {
+      document.body.style.overflow = '';
+    }
+    return () => {
+      document.body.style.overflow = '';
+    };
+  }, [mobileMenuOpen]);
+
+  if (user?.role === 'admin') {
+    return null;
+  }
+
   return (
-    <nav className="border-b bg-white/95 backdrop-blur supports-[backdrop-filter]:bg-white/60 sticky top-0 z-50">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+    <nav className="glass-nav sticky top-0 z-50">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative">
         <div className="flex justify-between items-center h-16">
           <div className="flex items-center">
-            <a href="/" className="text-xl font-bold text-gray-900">
+            <a href="/" className="ui-display text-xl font-bold text-gray-900">
               ShopMate
             </a>
           </div>
@@ -352,9 +430,9 @@ const Navigation = () => {
             )}
           </div>
 
-          <div className="flex items-center space-x-4">
+          <div className="flex items-center space-x-2 sm:space-x-4">
             {user?.role !== 'admin' && (
-              <a href="/cart" className="relative p-2 text-gray-700 hover:text-gray-900 transition-colors">
+              <a href="/cart" className="relative p-2 text-gray-700 hover:text-gray-900 transition-colors ui-surface">
                 <ShoppingCart className="h-6 w-6" />
                 {getTotalItems() > 0 && (
                   <Badge className="absolute -top-1 -right-1 px-2 py-1 text-xs bg-red-500 text-white">
@@ -365,31 +443,31 @@ const Navigation = () => {
             )}
 
             {authState.isAuthenticated && authState.user ? (
-              <div className="flex items-center space-x-4">
+              <div className="hidden sm:flex items-center space-x-4">
                 {authState.user.role === 'admin' && (
-                  <a href="/admin" className="text-gray-700 hover:text-gray-900 transition-colors">
+                  <a href="/admin" className="pill-link text-gray-700 hover:text-gray-900 transition-colors">
                     Admin
                   </a>
                 )}
-                <a href="/profile" className="text-gray-700 hover:text-gray-900 transition-colors">
+                <a href="/profile" className="pill-link text-gray-700 hover:text-gray-900 transition-colors">
                   <User className="h-6 w-6" />
                 </a>
                 <Button
                   variant="ghost"
                   size="sm"
                   onClick={logout}
-                  className="text-gray-700 hover:text-gray-900"
+                  className="text-gray-700 hover:text-gray-900 pill-link"
                 >
                   <LogOut className="h-4 w-4" />
                 </Button>
               </div>
             ) : (
-              <div className="flex items-center space-x-2">
+              <div className="hidden sm:flex items-center space-x-2">
                 <a href="/auth">
-                  <Button variant="ghost" size="sm">Login</Button>
+                  <Button variant="ghost" size="sm" className="pill-link">Login</Button>
                 </a>
                 <a href="/auth?tab=signup">
-                  <Button size="sm">Sign Up</Button>
+                  <Button size="sm" className="ui-surface">Sign Up</Button>
                 </a>
               </div>
             )}
@@ -408,13 +486,24 @@ const Navigation = () => {
 
         {/* Mobile Navigation */}
         {mobileMenuOpen && (
-          <div className="md:hidden border-t bg-white py-4">
-            <div className="flex flex-col space-y-4">
+          <div className="md:hidden absolute top-16 left-0 right-0 z-40 border-t bg-white/95 py-4 px-4 shadow-lg backdrop-blur">
+            <div className="flex flex-col space-y-3">
               {user?.role !== 'admin' && (
                 <>
-                  <a href="/products" className="text-gray-700 hover:text-gray-900 transition-colors">Products</a>
-                  <a href="/help" className="text-gray-700 hover:text-gray-900 transition-colors">Help</a>
-                  <a href="/contact" className="text-gray-700 hover:text-gray-900 transition-colors">Contact</a>
+                  <a href="/products" onClick={() => setMobileMenuOpen(false)} className="text-gray-700 hover:text-gray-900 transition-colors">Products</a>
+                  <a href="/help" onClick={() => setMobileMenuOpen(false)} className="text-gray-700 hover:text-gray-900 transition-colors">Help</a>
+                  <a href="/contact" onClick={() => setMobileMenuOpen(false)} className="text-gray-700 hover:text-gray-900 transition-colors">Contact</a>
+                </>
+              )}
+              {authState.isAuthenticated ? (
+                <>
+                  <a href="/profile" onClick={() => setMobileMenuOpen(false)} className="text-gray-700 hover:text-gray-900 transition-colors">Profile</a>
+                  <Button variant="outline" size="sm" onClick={logout} className="w-full">Logout</Button>
+                </>
+              ) : (
+                <>
+                  <a href="/auth" onClick={() => setMobileMenuOpen(false)}><Button variant="outline" size="sm" className="w-full">Login</Button></a>
+                  <a href="/auth?tab=signup" onClick={() => setMobileMenuOpen(false)}><Button size="sm" className="w-full">Sign Up</Button></a>
                 </>
               )}
             </div>
@@ -451,7 +540,7 @@ const HomePage = () => {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-purple-50">
+    <div className="min-h-screen mesh-bg">
       {/* Hero Section */}
       <section className="py-20 px-4">
         <div className="max-w-7xl mx-auto text-center">
@@ -494,38 +583,92 @@ const HomePage = () => {
               <Button size="lg" variant="outline">View All Products</Button>
             </a>
           </div>
+          
+          {/* Recently Viewed Products */}
+          <RecentlyViewed />
         </div>
       </section>
 
       {/* Features Section */}
-      <section className="py-16 bg-white">
-        <div className="max-w-7xl mx-auto px-4">
-          <h2 className="text-3xl font-bold text-center mb-12 text-gray-900">Why Choose ShopMate?</h2>
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
-            <div className="text-center p-6">
-              <div className="w-16 h-16 bg-blue-100 rounded-full flex items-center justify-center mx-auto mb-4">
-                <Package className="h-8 w-8 text-blue-600" />
+      <section className="py-16 px-4">
+        <div className="max-w-7xl mx-auto rounded-3xl border border-blue-100 bg-gradient-to-br from-white via-blue-50 to-sky-50 shadow-xl px-6 sm:px-10 py-10">
+          <div className="text-center mb-10">
+            <h2 className="ui-display text-3xl font-bold text-slate-900">Why Choose ShopMate?</h2>
+            <p className="text-slate-600 mt-2">Built around trust, speed, and convenience for daily shopping.</p>
+          </div>
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+            <div className="rounded-2xl border border-blue-100 bg-white/80 backdrop-blur p-6 text-center shadow-sm">
+              <div className="w-14 h-14 bg-blue-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                <Package className="h-7 w-7 text-blue-600" />
               </div>
-              <h3 className="text-xl font-semibold mb-2">Quality Products</h3>
-              <p className="text-gray-600">Carefully curated selection of high-quality products from trusted brands.</p>
+              <h3 className="text-xl font-semibold mb-2 text-slate-900">Quality Products</h3>
+              <p className="text-slate-600">Carefully curated selection of high-quality products from trusted brands.</p>
             </div>
-            <div className="text-center p-6">
-              <div className="w-16 h-16 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-4">
-                <CreditCard className="h-8 w-8 text-green-600" />
+            <div className="rounded-2xl border border-cyan-100 bg-white/80 backdrop-blur p-6 text-center shadow-sm">
+              <div className="w-14 h-14 bg-cyan-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                <CreditCard className="h-7 w-7 text-cyan-700" />
               </div>
-              <h3 className="text-xl font-semibold mb-2">Secure Payments</h3>
-              <p className="text-gray-600">Safe and secure payment processing with multiple payment options.</p>
+              <h3 className="text-xl font-semibold mb-2 text-slate-900">Secure Payments</h3>
+              <p className="text-slate-600">Safe and secure payment processing with multiple payment options.</p>
             </div>
-            <div className="text-center p-6">
-              <div className="w-16 h-16 bg-purple-100 rounded-full flex items-center justify-center mx-auto mb-4">
-                <HelpCircle className="h-8 w-8 text-purple-600" />
+            <div className="rounded-2xl border border-emerald-100 bg-white/80 backdrop-blur p-6 text-center shadow-sm">
+              <div className="w-14 h-14 bg-emerald-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                <HelpCircle className="h-7 w-7 text-emerald-700" />
               </div>
-              <h3 className="text-xl font-semibold mb-2">24/7 Support</h3>
-              <p className="text-gray-600">Round-the-clock customer support to help you with any questions.</p>
+              <h3 className="text-xl font-semibold mb-2 text-slate-900">24/7 Support</h3>
+              <p className="text-slate-600">Round-the-clock customer support to help you with any questions.</p>
             </div>
           </div>
         </div>
       </section>
+
+      <footer className="px-4 pb-10 pt-6">
+        <div className="max-w-7xl mx-auto rounded-3xl border border-blue-100 bg-gradient-to-br from-white via-blue-50 to-sky-50 text-slate-800 shadow-xl overflow-hidden">
+          <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 px-6 sm:px-10 py-10">
+            <div className="lg:col-span-5">
+              <h3 className="ui-display text-3xl font-bold tracking-tight text-slate-900">ShopMate</h3>
+              <p className="mt-3 text-slate-600 max-w-md">
+                Smart shopping with trusted products, transparent pricing, and a faster checkout experience.
+              </p>
+              <div className="mt-6 flex flex-wrap gap-2">
+                <span className="rounded-full border border-blue-200 bg-blue-100 px-3 py-1 text-xs text-blue-700">Secure Checkout</span>
+                <span className="rounded-full border border-cyan-200 bg-cyan-100 px-3 py-1 text-xs text-cyan-700">Fast Delivery</span>
+                <span className="rounded-full border border-emerald-200 bg-emerald-100 px-3 py-1 text-xs text-emerald-700">Support 24x7</span>
+              </div>
+              <div className="mt-6">
+                <a href="/products">
+                  <Button className="bg-blue-600 text-white hover:bg-blue-700">Start Shopping</Button>
+                </a>
+              </div>
+            </div>
+
+            <div className="lg:col-span-3">
+              <h4 className="ui-display text-sm uppercase tracking-widest text-slate-500">Explore</h4>
+              <div className="mt-4 space-y-3 text-sm">
+                <a href="/products" className="block text-slate-700 hover:text-blue-700">Products</a>
+                <a href="/help" className="block text-slate-700 hover:text-blue-700">Help Center</a>
+                <a href="/contact" className="block text-slate-700 hover:text-blue-700">Contact Us</a>
+                <a href="/auth" className="block text-slate-700 hover:text-blue-700">My Account</a>
+              </div>
+            </div>
+
+            <div className="lg:col-span-4">
+              <h4 className="ui-display text-sm uppercase tracking-widest text-slate-500">Contact</h4>
+              <div className="mt-4 space-y-3 text-sm text-slate-700">
+                <p>support@shopmate.com</p>
+                <p>+91 90000 00000</p>
+                <p>Mon-Sat: 10:00 AM - 8:00 PM</p>
+                <p>Mumbai, India</p>
+              </div>
+            </div>
+          </div>
+
+          <div className="border-t border-blue-100 bg-white/60 px-6 sm:px-10 py-4 text-xs text-slate-500 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
+            <span>(c) {new Date().getFullYear()} ShopMate. All rights reserved.</span>
+            <span>Built for smooth shopping experiences.</span>
+          </div>
+        </div>
+      </footer>
     </div>
   );
 };
@@ -588,12 +731,12 @@ const ProductCard = ({ product }) => {
 
   return (
     <Card
-      className="group hover:shadow-lg transition-all duration-300 border-0 bg-white/80 backdrop-blur cursor-pointer h-[460px] flex flex-col overflow-hidden"
+      className="group ui-surface-strong tilt-card transition-all duration-300 cursor-pointer h-[460px] flex flex-col overflow-hidden"
       onClick={handleCardClick}
     >
       <CardContent className="p-6 flex flex-col h-full">
         {/* Product Image - Fixed Height */}
-        <div className="w-full h-48 bg-gray-100 rounded-lg mb-4 overflow-hidden flex-shrink-0">
+        <div className="w-full h-48 bg-gray-100/80 rounded-lg mb-4 overflow-hidden flex-shrink-0 border border-slate-200/70">
           {product.images && product.images.length > 0 ? (
             <img
               src={product.images[0]}
@@ -616,7 +759,7 @@ const ProductCard = ({ product }) => {
 
           {/* Price */}
           <div className="mb-3 flex-shrink-0">
-            <span className="text-2xl font-bold text-blue-600">₹{product.price}</span>
+            <span className="ui-display text-2xl font-bold text-blue-600">₹{product.price}</span>
           </div>
 
           {/* Rating */}
@@ -658,9 +801,29 @@ const ProductCard = ({ product }) => {
             <Button
               onClick={handleBuyNow}
               disabled={product.stock === 0}
-              className="flex-1 bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 text-white"
+              className="flex-1 bg-gradient-to-r from-blue-600 to-cyan-500 hover:from-blue-700 hover:to-cyan-600 text-white"
             >
               Buy Now
+            </Button>
+            <Button
+              onClick={async (e) => {
+                e.stopPropagation();
+                if (!user) {
+                  toast.error('Please login to use wishlist');
+                  navigate('/auth');
+                  return;
+                }
+                try {
+                  await axios.post(`${API}/api/wishlist/${product.id}`);
+                  toast.success('Added to wishlist');
+                } catch (error) {
+                  toast.error(error.response?.data?.detail || 'Failed to add to wishlist');
+                }
+              }}
+              variant="ghost"
+              className="px-3"
+            >
+              <Heart className="h-5 w-5" />
             </Button>
           </div>
         </div>
@@ -674,36 +837,71 @@ const ProductsPage = () => {
   const [products, setProducts] = useState([]);
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedCategory, setSelectedCategory] = useState('');
+  const [selectedBrand, setSelectedBrand] = useState('');
   const [categories, setCategories] = useState([]);
+  const [brands, setBrands] = useState([]);
+  const [minPrice, setMinPrice] = useState('');
+  const [maxPrice, setMaxPrice] = useState('');
+  const [inStockOnly, setInStockOnly] = useState(false);
+  const [minRating, setMinRating] = useState('');
+  const [sortBy, setSortBy] = useState('');
+  const [sortOrder, setSortOrder] = useState('desc');
+  const [tagQuery, setTagQuery] = useState('');
+  const [minStock, setMinStock] = useState('');
+  const [onlyVariants, setOnlyVariants] = useState(false);
+  const [showFilters, setShowFilters] = useState(false);
+  const [isLoading, setIsLoading] = useState(false);
 
   useEffect(() => {
     fetchProducts();
-  }, [searchTerm, selectedCategory]);
+  }, [searchTerm, selectedCategory, selectedBrand, minPrice, maxPrice, inStockOnly, minRating, sortBy, sortOrder, tagQuery, minStock, onlyVariants]);
 
   const fetchProducts = async () => {
     try {
+      setIsLoading(true);
       const params = new URLSearchParams();
       if (searchTerm) params.append('search', searchTerm);
       if (selectedCategory) params.append('category', selectedCategory);
+      if (selectedBrand) params.append('brand', selectedBrand);
+      if (minPrice) params.append('min_price', minPrice);
+      if (maxPrice) params.append('max_price', maxPrice);
+      if (inStockOnly) params.append('in_stock', 'true');
+      if (minRating) params.append('min_rating', minRating);
+      if (sortBy) params.append('sort_by', sortBy);
+      if (sortOrder) params.append('sort_order', sortOrder);
+      if (tagQuery) params.append('tags', tagQuery);
+      if (minStock) params.append('min_stock', minStock);
+      if (onlyVariants) params.append('has_variants', 'true');
       
       const response = await axios.get(`${API}/api/products?${params}`);
       setProducts(response.data);
       
-      // Extract unique categories
+      // Extract unique categories and brands
       const uniqueCategories = [...new Set(response.data.map(p => p.category))];
+      const uniqueBrands = [...new Set(response.data.map(p => p.brand).filter(b => b))];
       setCategories(uniqueCategories);
+      setBrands(uniqueBrands);
     } catch (error) {
       console.error('Error fetching products:', error);
+    } finally {
+      setIsLoading(false);
     }
   };
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100 py-8">
       <div className="max-w-7xl mx-auto px-4">
-        <h1 className="text-4xl font-bold text-center mb-8 text-gray-900">Our Products</h1>
+        <h1 className="text-3xl sm:text-4xl font-bold text-center mb-8 text-gray-900">Our Products</h1>
         
-        {/* Search and Filter */}
-        <div className="flex flex-col md:flex-row gap-4 mb-8">
+        <div className="md:hidden mb-4">
+          <Button variant="outline" className="w-full" onClick={() => setShowFilters(prev => !prev)}>
+            <Filter className="h-4 w-4 mr-2" />
+            {showFilters ? 'Hide Filters' : 'Show Filters'}
+          </Button>
+        </div>
+
+        <div className={`${showFilters ? 'block' : 'hidden'} md:block`}>
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 xl:grid-cols-6 gap-4 mb-8">
           <div className="relative flex-1">
             <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
             <Input
@@ -723,14 +921,114 @@ const ProductsPage = () => {
               <option key={category} value={category}>{category}</option>
             ))}
           </select>
+          <select
+            value={selectedBrand}
+            onChange={(e) => setSelectedBrand(e.target.value)}
+            className="px-4 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+          >
+            <option value="">All Brands</option>
+            {brands.map(brand => (
+              <option key={brand} value={brand}>{brand}</option>
+            ))}
+          </select>
+          <Input
+            type="number"
+            placeholder="Min Price"
+            value={minPrice}
+            onChange={(e) => setMinPrice(e.target.value)}
+            className="w-full"
+          />
+          <Input
+            type="number"
+            placeholder="Max Price"
+            value={maxPrice}
+            onChange={(e) => setMaxPrice(e.target.value)}
+            className="w-full"
+          />
+          <Input
+            placeholder="Tags (comma)"
+            value={tagQuery}
+            onChange={(e) => setTagQuery(e.target.value)}
+            className="w-full"
+          />
+          <Input
+            type="number"
+            placeholder="Min Stock"
+            value={minStock}
+            onChange={(e) => setMinStock(e.target.value)}
+            className="w-full"
+          />
+          <select
+            value={minRating}
+            onChange={(e) => setMinRating(e.target.value)}
+            className="px-4 py-2 border border-gray-300 rounded-md"
+          >
+            <option value="">Any Rating</option>
+            <option value="3">3+ stars</option>
+            <option value="4">4+ stars</option>
+            <option value="4.5">4.5+ stars</option>
+          </select>
+          <label className="inline-flex items-center space-x-2 px-2">
+            <input
+              type="checkbox"
+              checked={inStockOnly}
+              onChange={(e) => setInStockOnly(e.target.checked)}
+            />
+            <span className="text-sm text-gray-700">In Stock</span>
+          </label>
+          <label className="inline-flex items-center space-x-2 px-2">
+            <input
+              type="checkbox"
+              checked={onlyVariants}
+              onChange={(e) => setOnlyVariants(e.target.checked)}
+            />
+            <span className="text-sm text-gray-700">Variants Only</span>
+          </label>
+          <select
+            value={sortBy}
+            onChange={(e) => setSortBy(e.target.value)}
+            className="px-4 py-2 border border-gray-300 rounded-md"
+          >
+            <option value="">Sort By</option>
+            <option value="popularity">Popularity</option>
+            <option value="price">Price</option>
+            <option value="rating">Rating</option>
+            <option value="newest">Newest</option>
+            <option value="name">Name</option>
+            <option value="stock">Stock</option>
+          </select>
+          <select
+            value={sortOrder}
+            onChange={(e) => setSortOrder(e.target.value)}
+            className="px-4 py-2 border border-gray-300 rounded-md"
+          >
+            <option value="desc">Desc</option>
+            <option value="asc">Asc</option>
+          </select>
+        </div>
         </div>
 
-        {/* Products Grid */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
-          {products.map((product, index) => (
-            <ProductCard key={`${product.id}-${index}`} product={product} />
-          ))}
-        </div>
+        {isLoading ? (
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+            {[...Array(8)].map((_, i) => (
+              <Card key={i} className="h-[460px] animate-pulse">
+                <CardContent className="p-6 space-y-4">
+                  <div className="w-full h-48 bg-gray-200 rounded-lg"></div>
+                  <div className="h-6 bg-gray-200 rounded w-2/3"></div>
+                  <div className="h-5 bg-gray-200 rounded w-1/3"></div>
+                  <div className="h-4 bg-gray-200 rounded w-1/2"></div>
+                  <div className="h-10 bg-gray-200 rounded w-full"></div>
+                </CardContent>
+              </Card>
+            ))}
+          </div>
+        ) : (
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+            {products.map((product, index) => (
+              <ProductCard key={`${product.id}-${index}`} product={product} />
+            ))}
+          </div>
+        )}
 
         {products.length === 0 && (
           <div className="text-center py-12">
@@ -786,13 +1084,13 @@ const CartPage = () => {
   return (
     <div className="min-h-screen bg-gray-50 py-8">
       <div className="max-w-4xl mx-auto px-4">
-        <h1 className="text-3xl font-bold mb-8">Shopping Cart</h1>
+        <h1 className="text-2xl sm:text-3xl font-bold mb-8">Shopping Cart</h1>
         
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
           <div className="lg:col-span-2 space-y-4">
             {cartItems.map(item => (
-              <Card key={item.product.id} className="p-6">
-                <div className="flex items-center space-x-4">
+              <Card key={item.product.id} className="p-4 sm:p-6">
+                <div className="flex flex-col sm:flex-row sm:items-center gap-4">
                   <div className="w-20 h-20 bg-gray-100 rounded-lg overflow-hidden">
                     {item.product.images && item.product.images.length > 0 ? (
                       <img
@@ -807,7 +1105,7 @@ const CartPage = () => {
                     )}
                   </div>
                   
-                  <div className="flex-1">
+                  <div className="flex-1 min-w-0">
                     <h3 className="font-semibold">{item.product.name}</h3>
                     <p className="text-gray-600">${item.product.price}</p>
                   </div>
@@ -830,7 +1128,7 @@ const CartPage = () => {
                     </Button>
                   </div>
                   
-                  <div className="text-right">
+                  <div className="text-left sm:text-right">
                     <p className="font-semibold">₹{(item.product.price * item.quantity).toFixed(2)}</p>
                     <Button
                       variant="ghost"
@@ -847,7 +1145,7 @@ const CartPage = () => {
           </div>
           
           <div>
-            <Card className="p-6 sticky top-24">
+            <Card className="p-6 lg:sticky lg:top-24">
               <h3 className="text-xl font-semibold mb-4">Order Summary</h3>
               <div className="space-y-2 mb-4">
                 <div className="flex justify-between">
@@ -894,6 +1192,297 @@ const CartPage = () => {
   );
 };
 
+// Wishlist Page
+const WishlistPage = () => {
+  const { user } = useAuth();
+  const navigate = useNavigate();
+  const [products, setProducts] = useState([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    const loadWishlist = async () => {
+      try {
+        const response = await axios.get(`${API}/api/wishlist`);
+        setProducts(response.data);
+      } catch (e) {
+      } finally {
+        setLoading(false);
+      }
+    };
+    if (user) {
+      loadWishlist();
+    }
+  }, [user]);
+
+  const handleRemove = async (productId) => {
+    try {
+      await axios.delete(`${API}/api/wishlist/${productId}`);
+      setProducts(prev => prev.filter(p => p.id !== productId));
+      toast.success('Removed from wishlist');
+    } catch (e) {
+      toast.error('Failed to remove');
+    }
+  };
+
+  if (!user) {
+    return <Navigate to="/auth" replace />;
+  }
+
+  return (
+    <div className="min-h-screen bg-gray-50 py-8">
+      <div className="max-w-7xl mx-auto px-4">
+        <h1 className="text-2xl sm:text-3xl font-bold mb-6">My Wishlist</h1>
+        {loading ? (
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            {[...Array(6)].map((_, i) => (
+              <Card key={i} className="h-[280px] animate-pulse">
+                <CardContent className="p-6 space-y-4">
+                  <div className="w-full h-32 bg-gray-200 rounded"></div>
+                  <div className="h-5 bg-gray-200 rounded w-2/3"></div>
+                  <div className="h-4 bg-gray-200 rounded w-1/3"></div>
+                </CardContent>
+              </Card>
+            ))}
+          </div>
+        ) : products.length === 0 ? (
+          <Card className="border-dashed">
+            <CardContent className="text-center py-16">
+              <Package className="mx-auto h-16 w-16 text-gray-400 mb-4" />
+              <h3 className="text-xl font-medium text-gray-900 mb-2">No items in wishlist</h3>
+              <p className="text-gray-500 mb-6">Browse products and add items to your wishlist.</p>
+              <Button onClick={() => navigate('/products')}>Browse Products</Button>
+            </CardContent>
+          </Card>
+        ) : (
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            {products.map(p => (
+              <Card key={p.id} className="p-4">
+                <div className="flex flex-col sm:flex-row gap-4">
+                  <div className="w-24 h-24 bg-gray-100 rounded overflow-hidden">
+                    {p.images && p.images.length > 0 ? (
+                      <img src={p.images[0]} alt={p.name} className="w-full h-full object-cover" />
+                    ) : (
+                      <div className="w-full h-full flex items-center justify-center">
+                        <Package className="h-8 w-8 text-gray-400" />
+                      </div>
+                    )}
+                  </div>
+                  <div className="flex-1">
+                    <h3 className="font-semibold">{p.name}</h3>
+                    <p className="text-gray-600">₹{p.price}</p>
+                    <div className="mt-2 flex space-x-2">
+                      <Button
+                        variant="outline"
+                        onClick={() => navigate(`/product/${p.id}`)}
+                      >
+                        View
+                      </Button>
+                      <Button
+                        variant="ghost"
+                        className="text-red-600"
+                        onClick={() => handleRemove(p.id)}
+                      >
+                        Remove
+                      </Button>
+                    </div>
+                  </div>
+                </div>
+              </Card>
+            ))}
+          </div>
+        )}
+      </div>
+    </div>
+  );
+};
+
+// My Returns Page
+const MyReturnsPage = () => {
+  const { user } = useAuth();
+  const [returns, setReturns] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [productMap, setProductMap] = useState({});
+
+  useEffect(() => {
+    const load = async () => {
+      try {
+        const res = await axios.get(`${API}/api/returns`);
+        setReturns(res.data);
+        const ids = Array.from(new Set(res.data.map(r => r.product_id).filter(Boolean)));
+        const entries = await Promise.all(ids.map(async (id) => {
+          try {
+            const p = await axios.get(`${API}/api/products/${id}`);
+            return [id, p.data];
+          } catch {
+            return [id, null];
+          }
+        }));
+        const map = {};
+        entries.forEach(([id, p]) => { map[id] = p; });
+        setProductMap(map);
+      } catch (e) {
+      } finally {
+        setLoading(false);
+      }
+    };
+    if (user) load();
+  }, [user]);
+
+  if (!user) return <Navigate to="/auth" replace />;
+
+  return (
+    <div className="min-h-screen bg-gray-50 py-8">
+      <div className="max-w-7xl mx-auto px-4">
+        <h1 className="text-2xl sm:text-3xl font-bold mb-6">My Returns</h1>
+        {loading ? (
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            {[...Array(6)].map((_, i) => (
+              <Card key={i} className="animate-pulse">
+                <CardContent className="p-6 space-y-3">
+                  <div className="h-5 bg-gray-200 rounded w-1/2"></div>
+                  <div className="h-4 bg-gray-200 rounded w-1/3"></div>
+                  <div className="h-4 bg-gray-200 rounded w-2/3"></div>
+                </CardContent>
+              </Card>
+            ))}
+          </div>
+        ) : returns.length === 0 ? (
+          <Card className="border-dashed">
+            <CardContent className="text-center py-16">
+              <RefreshCw className="mx-auto h-16 w-16 text-gray-400 mb-4" />
+              <h3 className="text-xl font-medium text-gray-900 mb-2">No Returns</h3>
+              <p className="text-gray-500">You have no return requests.</p>
+            </CardContent>
+          </Card>
+        ) : (
+          <div className="space-y-4">
+            {returns.map((r) => {
+              const p = productMap[r.product_id];
+              return (
+                <Card key={r.id} className="p-6">
+                  <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+                    <div className="flex items-center space-x-4">
+                      <div className="w-16 h-16 bg-gray-100 rounded overflow-hidden">
+                        {p?.images?.length ? (
+                          <img src={p.images[0]} alt={p.name} className="w-full h-full object-cover" />
+                        ) : (
+                          <div className="w-full h-full flex items-center justify-center">
+                            <Package className="h-6 w-6 text-gray-400" />
+                          </div>
+                        )}
+                      </div>
+                      <div>
+                        <p className="font-semibold">Order #{r.order_id?.slice(-8)}</p>
+                        <p className="text-sm text-gray-600">Product: {p?.name || r.product_id}</p>
+                        <p className="text-sm text-gray-600">Qty: {r.quantity}</p>
+                        {r.reason && <p className="text-sm text-gray-600">Reason: {r.reason}</p>}
+                      </div>
+                    </div>
+                    <Badge className="capitalize w-fit">{r.status}</Badge>
+                  </div>
+                </Card>
+              );
+            })}
+          </div>
+        )}
+      </div>
+    </div>
+  );
+};
+
+// Admin Returns Page
+const AdminReturnsPage = () => {
+  const { user } = useAuth();
+  const [items, setItems] = useState([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    const load = async () => {
+      try {
+        const res = await axios.get(`${API}/api/admin/returns`);
+        setItems(res.data);
+      } catch (e) {
+      } finally {
+        setLoading(false);
+      }
+    };
+    if (user?.role === 'admin') load();
+  }, [user]);
+
+  const updateStatus = async (id, status) => {
+    try {
+      await axios.put(`${API}/api/admin/returns/${id}`, { status });
+      const res = await axios.get(`${API}/api/admin/returns`);
+      setItems(res.data);
+      toast.success('Return status updated');
+    } catch (e) {
+      toast.error('Failed to update');
+    }
+  };
+
+  const restock = async (id) => {
+    try {
+      await axios.post(`${API}/api/admin/returns/${id}/restock`);
+      const res = await axios.get(`${API}/api/admin/returns`);
+      setItems(res.data);
+      toast.success('Product restocked');
+    } catch (e) {
+      toast.error('Failed to restock');
+    }
+  };
+
+  if (!user || user.role !== 'admin') return <Navigate to="/" replace />;
+
+  return (
+    <div className="min-h-screen bg-gray-50 py-8">
+      <div className="max-w-7xl mx-auto px-4">
+        <h1 className="text-2xl sm:text-3xl font-bold mb-6">Manage Returns</h1>
+        {loading ? (
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            {[...Array(6)].map((_, i) => (
+              <Card key={i} className="animate-pulse">
+                <CardContent className="p-6 space-y-3">
+                  <div className="h-5 bg-gray-200 rounded w-1/2"></div>
+                  <div className="h-4 bg-gray-200 rounded w-1/3"></div>
+                  <div className="h-4 bg-gray-200 rounded w-2/3"></div>
+                </CardContent>
+              </Card>
+            ))}
+          </div>
+        ) : (
+          <div className="space-y-4">
+            {items.map((r) => (
+              <Card key={r.id} className="p-4 sm:p-6">
+                <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
+                  <div>
+                    <p className="font-semibold">Order #{r.order_id?.slice(-8)}</p>
+                    <p className="text-sm text-gray-600">Product: {r.product_id}</p>
+                    <p className="text-sm text-gray-600">Qty: {r.quantity}</p>
+                    {r.reason && <p className="text-sm text-gray-600">Reason: {r.reason}</p>}
+                  </div>
+                  <div className="flex flex-col sm:flex-row sm:items-center gap-2">
+                    <select
+                      value={r.status}
+                      onChange={(e) => updateStatus(r.id, e.target.value)}
+                      className="px-3 py-2 border rounded"
+                    >
+                      <option value="requested">requested</option>
+                      <option value="approved">approved</option>
+                      <option value="rejected">rejected</option>
+                      <option value="refunded">refunded</option>
+                      <option value="received">received</option>
+                    </select>
+                    <Button variant="outline" onClick={() => restock(r.id)}>Restock</Button>
+                  </div>
+                </div>
+              </Card>
+            ))}
+          </div>
+        )}
+      </div>
+    </div>
+  );
+};
 // Auth Pages
 const LoginPage = () => {
   const { login } = useAuth();
@@ -1200,7 +1789,7 @@ const HelpPage = () => {
   return (
     <div className="min-h-screen bg-gray-50 py-8">
       <div className="max-w-4xl mx-auto px-4">
-        <h1 className="text-4xl font-bold text-center mb-8">Help Center</h1>
+        <h1 className="text-3xl sm:text-4xl font-bold text-center mb-8">Help Center</h1>
         
         <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
           <TabsList className="grid w-full grid-cols-2">
@@ -1303,7 +1892,7 @@ const ContactPage = () => {
   return (
     <div className="min-h-screen bg-gray-50 py-8">
       <div className="max-w-4xl mx-auto px-4">
-        <h1 className="text-4xl font-bold text-center mb-8">Contact Us</h1>
+        <h1 className="text-3xl sm:text-4xl font-bold text-center mb-8">Contact Us</h1>
         
         <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
           <Card>
@@ -1425,13 +2014,13 @@ const AdminDashboard = () => {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50 py-8">
+    <div className="min-h-screen admin-shell py-8">
       <div className="max-w-7xl mx-auto px-4">
-        <h1 className="text-4xl font-bold mb-8">Admin Dashboard</h1>
+        <h1 className="ui-display text-3xl sm:text-4xl font-bold mb-8">Admin Dashboard</h1>
 
         {dashboardData && (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
-            <Card>
+            <Card className="ui-surface tilt-card">
               <CardContent className="p-6">
                 <div className="flex items-center">
                   <Package className="h-8 w-8 text-blue-600" />
@@ -1443,7 +2032,7 @@ const AdminDashboard = () => {
               </CardContent>
             </Card>
 
-            <Card>
+            <Card className="ui-surface tilt-card">
               <CardContent className="p-6">
                 <div className="flex items-center">
                   <ShoppingCart className="h-8 w-8 text-green-600" />
@@ -1455,7 +2044,7 @@ const AdminDashboard = () => {
               </CardContent>
             </Card>
 
-            <Card>
+            <Card className="ui-surface tilt-card">
               <CardContent className="p-6">
                 <div className="flex items-center">
                   <Users className="h-8 w-8 text-purple-600" />
@@ -1467,7 +2056,7 @@ const AdminDashboard = () => {
               </CardContent>
             </Card>
 
-            <Card>
+            <Card className="ui-surface tilt-card">
               <CardContent className="p-6">
                 <div className="flex items-center">
                   <Ticket className="h-8 w-8 text-red-600" />
@@ -1482,10 +2071,10 @@ const AdminDashboard = () => {
         )}
 
         <div className="text-center">
-          <h2 className="text-2xl font-semibold mb-6">Quick Actions</h2>
+          <h2 className="ui-display text-2xl font-semibold mb-6">Quick Actions</h2>
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
             <a href="/admin/products">
-              <Button className="w-full h-20 flex flex-col items-center justify-center relative">
+              <Button className="w-full h-20 flex flex-col items-center justify-center relative ui-surface">
                 <Package className="h-6 w-6 mb-2" />
                 <span className="text-sm font-medium">Manage Products</span>
                 <span className="absolute top-2 right-2 bg-blue-500 text-white text-xs px-2 py-1 rounded-full">
@@ -1494,7 +2083,7 @@ const AdminDashboard = () => {
               </Button>
             </a>
             <a href="/admin/orders">
-              <Button className="w-full h-20 flex flex-col items-center justify-center relative">
+              <Button className="w-full h-20 flex flex-col items-center justify-center relative ui-surface">
                 <ShoppingCart className="h-6 w-6 mb-2" />
                 <span className="text-sm font-medium">View Orders</span>
                 <span className="absolute top-2 right-2 bg-green-500 text-white text-xs px-2 py-1 rounded-full">
@@ -1503,7 +2092,7 @@ const AdminDashboard = () => {
               </Button>
             </a>
             <a href="/admin/users">
-              <Button className="w-full h-20 flex flex-col items-center justify-center relative">
+              <Button className="w-full h-20 flex flex-col items-center justify-center relative ui-surface">
                 <Users className="h-6 w-6 mb-2" />
                 <span className="text-sm font-medium">Manage Users</span>
                 <span className="absolute top-2 right-2 bg-purple-500 text-white text-xs px-2 py-1 rounded-full">
@@ -1512,12 +2101,30 @@ const AdminDashboard = () => {
               </Button>
             </a>
             <a href="/admin/support-tickets">
-              <Button className="w-full h-20 flex flex-col items-center justify-center relative">
+              <Button className="w-full h-20 flex flex-col items-center justify-center relative ui-surface">
                 <Ticket className="h-6 w-6 mb-2" />
                 <span className="text-sm font-medium">Support Tickets</span>
                 <span className="absolute top-2 right-2 bg-red-500 text-white text-xs px-2 py-1 rounded-full">
                   {counters.total_unresolved_tickets}
                 </span>
+              </Button>
+            </a>
+            <a href="/admin/returns">
+              <Button className="w-full h-20 flex flex-col items-center justify-center ui-surface">
+                <RefreshCw className="h-6 w-6 mb-2" />
+                <span className="text-sm font-medium">Manage Returns</span>
+              </Button>
+            </a>
+            <a href="/admin/analytics">
+              <Button className="w-full h-20 flex flex-col items-center justify-center bg-gradient-to-r from-blue-600 to-cyan-500 hover:from-blue-700 hover:to-cyan-600 text-white">
+                <BarChart3 className="h-6 w-6 mb-2" />
+                <span className="text-sm font-medium">Analytics Dashboard</span>
+              </Button>
+            </a>
+            <a href="/admin/coupons">
+              <Button className="w-full h-20 flex flex-col items-center justify-center relative ui-surface">
+                <Tag className="h-6 w-6 mb-2" />
+                <span className="text-sm font-medium">Manage Coupons</span>
               </Button>
             </a>
           </div>
@@ -1529,7 +2136,12 @@ const AdminDashboard = () => {
 
 // Profile Page Components
 const ProfilePage = () => {
-  return (
+  const { user } = useAuth();
+  return user?.role === 'admin' ? (
+    <AdminLayout>
+      <ProfileInfo />
+    </AdminLayout>
+  ) : (
     <ProfileLayout>
       <ProfileInfo />
     </ProfileLayout>
@@ -1537,7 +2149,12 @@ const ProfilePage = () => {
 };
 
 const ProfileTicketsPage = () => {
-  return (
+  const { user } = useAuth();
+  return user?.role === 'admin' ? (
+    <AdminLayout>
+      <MyTicketsPage />
+    </AdminLayout>
+  ) : (
     <ProfileLayout>
       <MyTicketsPage />
     </ProfileLayout>
@@ -1545,7 +2162,12 @@ const ProfileTicketsPage = () => {
 };
 
 const ProfileSettingsPage = () => {
-  return (
+  const { user } = useAuth();
+  return user?.role === 'admin' ? (
+    <AdminLayout>
+      <SettingsPage />
+    </AdminLayout>
+  ) : (
     <ProfileLayout>
       <SettingsPage />
     </ProfileLayout>
@@ -1553,24 +2175,53 @@ const ProfileSettingsPage = () => {
 };
 
 const ProfileOrdersPage = () => {
-  return (
+  const { user } = useAuth();
+  return user?.role === 'admin' ? (
+    <AdminLayout>
+      <OrderHistoryPage />
+    </AdminLayout>
+  ) : (
     <ProfileLayout>
       <OrderHistoryPage />
     </ProfileLayout>
   );
 };
 
+const ProfileReturnsPage = () => {
+  const { user } = useAuth();
+  return user?.role === 'admin' ? (
+    <AdminLayout>
+      <MyReturnsPage />
+    </AdminLayout>
+  ) : (
+    <ProfileLayout>
+      <MyReturnsPage />
+    </ProfileLayout>
+  );
+};
+
+const ProfileWishlistPage = () => {
+  const { user } = useAuth();
+  return user?.role === 'admin' ? (
+    <AdminLayout>
+      <WishlistPage />
+    </AdminLayout>
+  ) : (
+    <ProfileLayout>
+      <WishlistPage />
+    </ProfileLayout>
+  );
+};
+
 // Main App Component
 function App() {
-  const [navKey, setNavKey] = useState(0);
-
   return (
     <ErrorBoundary>
       <AuthProvider>
         <CartProvider>
           <Router>
             <div className="App">
-              <Navigation key={navKey} onAuthChange={() => setNavKey(prev => prev + 1)} />
+              <Navigation />
             <Routes>
               <Route path="/" element={<HomePage />} />
               <Route path="/products" element={<ProductsPage />} />
@@ -1579,7 +2230,6 @@ function App() {
               <Route path="/auth" element={<Auth />} />
               <Route path="/help" element={<HelpPage />} />
               <Route path="/contact" element={<ContactPage />} />
-              {/* Removed CheckoutPage route because component is missing */}
               <Route path="/checkout/success" element={<CheckoutSuccessPage />} />
               <Route path="/checkout" element={<CheckoutPage />} />
             <Route path="/order-success/:orderId" element={
@@ -1607,29 +2257,70 @@ function App() {
                   <ProfileOrdersPage />
                 </ProtectedRoute>
               } />
-              <Route path="/admin" element={
+            <Route path="/profile/returns" element={
+                <ProtectedRoute>
+                  <ProfileReturnsPage />
+                </ProtectedRoute>
+              } />
+            <Route path="/profile/wishlist" element={
+                <ProtectedRoute>
+                  <ProfileWishlistPage />
+                </ProtectedRoute>
+              } />
+            <Route path="/admin" element={
                 <ProtectedRoute adminOnly>
-                  <AdminDashboard />
+                  <AdminLayout>
+                    <AnalyticsDashboard />
+                  </AdminLayout>
                 </ProtectedRoute>
               } />
               <Route path="/admin/products" element={
                 <ProtectedRoute adminOnly>
-                  <ProductManagement />
+                  <AdminLayout>
+                    <ProductManagement />
+                  </AdminLayout>
                 </ProtectedRoute>
               } />
               <Route path="/admin/users" element={
                 <ProtectedRoute adminOnly>
-                  <UserManagement />
+                  <AdminLayout>
+                    <UserManagement />
+                  </AdminLayout>
                 </ProtectedRoute>
               } />
               <Route path="/admin/orders" element={
                 <ProtectedRoute adminOnly>
-                  <OrderManagement />
+                  <AdminLayout>
+                    <OrderManagement />
+                  </AdminLayout>
+                </ProtectedRoute>
+              } />
+              <Route path="/admin/returns" element={
+                <ProtectedRoute adminOnly>
+                  <AdminLayout>
+                    <AdminReturnsPage />
+                  </AdminLayout>
                 </ProtectedRoute>
               } />
               <Route path="/admin/support-tickets" element={
                 <ProtectedRoute adminOnly>
-                  <SupportTicketManagement />
+                  <AdminLayout>
+                    <SupportTicketManagement />
+                  </AdminLayout>
+                </ProtectedRoute>
+              } />
+              <Route path="/admin/analytics" element={
+                <ProtectedRoute adminOnly>
+                  <AdminLayout>
+                    <AnalyticsDashboard />
+                  </AdminLayout>
+                </ProtectedRoute>
+              } />
+              <Route path="/admin/coupons" element={
+                <ProtectedRoute adminOnly>
+                  <AdminLayout>
+                    <CouponManagement />
+                  </AdminLayout>
                 </ProtectedRoute>
               } />
             </Routes>
@@ -1643,3 +2334,4 @@ function App() {
 }
 
 export default App;
+

@@ -31,6 +31,12 @@ const CheckoutPage = () => {
   const [paymentMethod, setPaymentMethod] = useState('COD');
   const [loading, setLoading] = useState(true);
   const [isPlacingOrder, setIsPlacingOrder] = useState(false);
+  const [couponCode, setCouponCode] = useState('');
+  const [couponMeta, setCouponMeta] = useState(null);
+  const [failedOrderPayload, setFailedOrderPayload] = useState(null);
+  const [availableCoupons, setAvailableCoupons] = useState([]);
+  const [loadingOffers, setLoadingOffers] = useState(false);
+  const [offersOpen, setOffersOpen] = useState(false);
 
   useEffect(() => {
     // Check if this is a buy now checkout from URL state or localStorage
@@ -40,9 +46,9 @@ const CheckoutPage = () => {
         const item = JSON.parse(buyNowData);
         setBuyNowItem(item);
         setIsBuyNow(true);
-        localStorage.removeItem('buyNowItem'); // Clear after use
       } catch (error) {
         console.error('Error parsing buy now data:', error);
+        localStorage.removeItem('buyNowItem');
       }
     }
 
@@ -77,6 +83,24 @@ const CheckoutPage = () => {
       setLoading(false);
     }
   };
+
+  const getCheckoutTotal = () => (isBuyNow ? (buyNowItem?.total || 0) : getTotalPrice());
+
+  const fetchAvailableCoupons = async () => {
+    setLoadingOffers(true);
+    try {
+      const response = await axios.get(`${API}/api/coupons/available`);
+      setAvailableCoupons(Array.isArray(response.data) ? response.data : []);
+    } catch (error) {
+      setAvailableCoupons([]);
+    } finally {
+      setLoadingOffers(false);
+    }
+  };
+
+  useEffect(() => {
+    fetchAvailableCoupons();
+  }, []);
 
   const handleEditToggle = () => {
     setIsEditing(!isEditing);
@@ -180,8 +204,9 @@ const CheckoutPage = () => {
           products: [{
             product_id: buyNowItem.product.id,
             name: buyNowItem.product.name,
+            variant_sku: buyNowItem.variant_sku || null,
             quantity: buyNowItem.quantity,
-            price: buyNowItem.product.price,
+            price: buyNowItem.variant_price || buyNowItem.product.price,
             total: buyNowItem.total
           }],
           total_amount: buyNowItem.total
@@ -193,6 +218,7 @@ const CheckoutPage = () => {
           products: cartItems.map(item => ({
             product_id: item.product.id,
             name: item.product.name,
+            variant_sku: item.variant_sku || null,
             quantity: item.quantity,
             price: item.product.price,
             total: item.product.price * item.quantity
@@ -200,6 +226,10 @@ const CheckoutPage = () => {
           total_amount: getTotalPrice()
         };
         apiEndpoint = `${API}/api/orders`;
+      }
+
+      if (couponMeta?.coupon_code) {
+        orderData.coupon_code = couponMeta.coupon_code;
       }
 
       // Create order via API
@@ -212,24 +242,70 @@ const CheckoutPage = () => {
       // Clear cart if it was a cart order
       if (!isBuyNow) {
         clearCart();
+      } else {
+        localStorage.removeItem('buyNowItem');
       }
 
       // Use the order_id from backend response (sequential format like "0001")
       const backendOrderId = response.data.order_id || response.data.id;
+      setFailedOrderPayload(null);
 
       // Redirect to success page
       window.location.href = `/order-success/${backendOrderId}`;
     } catch (error) {
       console.error('Error placing order:', error);
       toast.error(error.response?.data?.detail || 'Failed to place order');
+      setFailedOrderPayload({
+        coupon_code: couponMeta?.coupon_code || null
+      });
     } finally {
       setIsPlacingOrder(false);
     }
   };
 
+  const handleValidateCoupon = async (inputCode = null) => {
+    const cartTotal = getCheckoutTotal();
+    const codeToValidate = (inputCode || couponCode).trim().toUpperCase();
+    if (!codeToValidate) {
+      toast.error('Enter coupon code');
+      return;
+    }
+    try {
+      const response = await axios.get(`${API}/api/coupons/validate`, {
+        params: { code: codeToValidate, cart_total: cartTotal }
+      });
+      setCouponCode(codeToValidate);
+      setCouponMeta(response.data);
+      toast.success('Coupon applied');
+    } catch (error) {
+      setCouponMeta(null);
+      const detail = error.response?.data?.detail || 'Invalid coupon';
+      const match = String(detail).match(/Minimum order amount for this coupon is\s*([0-9.]+)/i);
+      if (match) {
+        const requiredAmount = Number(match[1]);
+        if (!Number.isNaN(requiredAmount) && cartTotal < requiredAmount) {
+          toast.error(`Add Rs ${(requiredAmount - cartTotal).toFixed(2)} more to use this coupon`);
+          return;
+        }
+      }
+      toast.error(detail);
+    }
+  };
+
+  const handleCopyCoupon = async (code) => {
+    try {
+      await navigator.clipboard.writeText(code);
+      toast.success(`Copied ${code}`);
+    } catch (error) {
+      toast.error('Failed to copy coupon code');
+    }
+  };
+
+  const cartTotal = getCheckoutTotal();
+
   return (
-    <div className="max-w-3xl mx-auto p-4 sm:p-6 bg-white rounded-lg shadow mt-4 sm:mt-10">
-      <h1 className="text-xl sm:text-2xl font-bold mb-6">Checkout</h1>
+    <div className="max-w-3xl mx-auto p-4 sm:p-6 ui-surface-strong rounded-2xl mt-4 sm:mt-10">
+      <h1 className="ui-display text-xl sm:text-2xl font-bold mb-6">Checkout</h1>
 
       <div className="mb-6">
         <Label>Full Name</Label>
@@ -343,13 +419,107 @@ const CheckoutPage = () => {
         </Select>
       </div>
 
+      <div className="mb-6">
+        <Button
+          type="button"
+          variant="outline"
+          className="w-full flex items-center justify-between"
+          onClick={() => setOffersOpen(prev => !prev)}
+        >
+          <span>Available Offers</span>
+          <span>{offersOpen ? '▲' : '▼'}</span>
+        </Button>
+        {offersOpen && (
+          <div className="mt-3">
+            {loadingOffers ? (
+              <p className="text-sm text-gray-500">Loading offers...</p>
+            ) : availableCoupons.length === 0 ? (
+              <p className="text-sm text-gray-500">No public offers right now.</p>
+            ) : (
+              <div className="space-y-3">
+                {availableCoupons.map((coupon) => {
+                  const isEligible = cartTotal >= Number(coupon.min_order_amount || 0);
+                  const deficit = Math.max(0, Number(coupon.min_order_amount || 0) - cartTotal);
+                  return (
+                    <Card key={coupon.code} className="border border-gray-200">
+                      <CardHeader className="pb-2">
+                        <CardTitle className="text-base">{coupon.code}</CardTitle>
+                      </CardHeader>
+                      <CardContent className="pt-0 text-sm">
+                        <p>
+                          {coupon.discount_type === 'percentage'
+                            ? `${coupon.value}% OFF`
+                            : `Rs ${Number(coupon.value || 0).toFixed(2)} OFF`}
+                          {' | '}
+                          Min order Rs {Number(coupon.min_order_amount || 0).toFixed(2)}
+                        </p>
+                        {coupon.max_discount_amount != null && (
+                          <p>Max discount Rs {Number(coupon.max_discount_amount).toFixed(2)}</p>
+                        )}
+                        {coupon.expires_at && (
+                          <p>Expires: {new Date(coupon.expires_at).toLocaleString()}</p>
+                        )}
+                        {coupon.description && <p className="text-gray-600">{coupon.description}</p>}
+                        {!isEligible && (
+                          <p className="text-amber-600 mt-1">
+                            Add Rs {deficit.toFixed(2)} more to use this coupon
+                          </p>
+                        )}
+                        <div className="flex gap-2 mt-3">
+                          <Button type="button" variant="outline" onClick={() => handleCopyCoupon(coupon.code)}>
+                            Copy Code
+                          </Button>
+                          <Button
+                            type="button"
+                            onClick={() => handleValidateCoupon(coupon.code)}
+                            disabled={!isEligible}
+                          >
+                            Apply at Checkout
+                          </Button>
+                        </div>
+                      </CardContent>
+                    </Card>
+                  );
+                })}
+              </div>
+            )}
+          </div>
+        )}
+      </div>
+
+      <div className="mb-6">
+        <Label>Coupon Code</Label>
+        <div className="flex gap-2 mt-2">
+          <Input
+            value={couponCode}
+            onChange={(e) => setCouponCode(e.target.value.toUpperCase())}
+            placeholder="Enter coupon"
+          />
+          <Button type="button" variant="outline" onClick={() => handleValidateCoupon()}>Apply</Button>
+        </div>
+        {couponMeta && (
+          <p className="text-sm text-green-600 mt-2">
+            Applied {couponMeta.coupon_code}: Discount Rs {couponMeta.discount_amount} | Final Rs {couponMeta.final_total}
+          </p>
+        )}
+      </div>
+
       <Button
         onClick={handlePlaceOrder}
         disabled={isPlacingOrder || (!isBuyNow && cartItems.length === 0)}
         className="w-full"
       >
-        {isPlacingOrder ? 'Placing Order...' : `Place Order - ₹${isBuyNow ? buyNowItem?.total?.toFixed(2) : getTotalPrice().toFixed(2)}`}
+        {isPlacingOrder ? 'Placing Order...' : `Place Order - Rs ${(
+          couponMeta?.final_total ?? cartTotal
+        )?.toFixed(2)}`}
       </Button>
+      {failedOrderPayload && (
+        <div className="mt-4">
+          <Button variant="outline" className="w-full" onClick={handlePlaceOrder}>
+            Retry Failed Order
+          </Button>
+        </div>
+      )}
     </div>
   );
 };
@@ -357,3 +527,6 @@ const CheckoutPage = () => {
 
 export default CheckoutPage;
    
+
+
+

@@ -129,6 +129,20 @@ const OrderManagement = () => {
                     </div>
                   </div>
                 )}
+
+                {order.status_history && order.status_history.length > 0 && (
+                  <div className="mt-4">
+                    <h4 className="font-semibold">Status Timeline:</h4>
+                    <div className="space-y-2 mt-2">
+                      {order.status_history.slice().reverse().map((event, idx) => (
+                        <div key={`status-${idx}`} className="text-sm bg-gray-100 rounded px-3 py-2 flex items-center justify-between">
+                          <span className="capitalize">{event.status}</span>
+                          <span className="text-gray-500">{new Date(event.timestamp).toLocaleString()}</span>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
               </CardContent>
             </Card>
           ))}

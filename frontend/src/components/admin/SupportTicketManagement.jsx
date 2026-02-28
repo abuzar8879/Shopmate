@@ -100,14 +100,14 @@ const SupportTicketManagement = () => {
   return (
     <div className="min-h-screen bg-gray-50 py-8">
       <div className="max-w-6xl mx-auto px-4">
-        <div className="flex items-center space-x-4 mb-6">
+        <div className="flex items-center flex-wrap gap-3 mb-6">
           <a href="/admin">
             <Button className="flex items-center space-x-2 bg-black text-white hover:bg-gray-800">
               <ArrowLeft className="h-4 w-4" />
               <span>Back</span>
             </Button>
           </a>
-          <h1 className="text-3xl font-bold">Manage Support Tickets</h1>
+          <h1 className="text-2xl sm:text-3xl font-bold">Manage Support Tickets</h1>
         </div>
 
         <Card>
@@ -129,7 +129,7 @@ const SupportTicketManagement = () => {
                           : 'border-gray-200 bg-white hover:border-gray-300'
                       }`}
                     >
-                      <div className="flex items-center justify-between">
+                    <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-3">
                         <div className="flex-1">
                           <div className="flex items-center gap-3 mb-2">
                             <span className="font-medium text-sm text-gray-600">
@@ -161,7 +161,7 @@ const SupportTicketManagement = () => {
                 {/* Selected Ticket Chat View */}
                 {selectedTicket && (
                   <div className="border-t pt-6">
-                    <div className="flex items-center justify-between mb-4">
+                  <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4 mb-4">
                       <div>
                         <h3 className="text-xl font-semibold text-gray-900">
                           {selectedTicket.subject}
@@ -186,7 +186,7 @@ const SupportTicketManagement = () => {
                           </p>
                         )}
                       </div>
-                      <div className="flex gap-2">
+                      <div className="flex flex-wrap gap-2">
                         <Button
                           variant="outline"
                           size="sm"

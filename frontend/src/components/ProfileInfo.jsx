@@ -200,7 +200,7 @@ const ProfileInfo = () => {
 
   return (
     <div className="max-w-4xl mx-auto">
-      <h1 className="text-4xl font-bold mb-8">My Profile</h1>
+      <h1 className="text-3xl sm:text-4xl font-bold mb-8">My Profile</h1>
 
       <Card>
         <CardHeader>
@@ -305,7 +305,7 @@ const ProfileInfo = () => {
                   <p className="text-sm text-red-600 mt-1">{form.formState.errors.delivery_address.street.message}</p>
                 )}
 
-                <div className="grid grid-cols-2 gap-2">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
                   <div>
                     <Input
                       placeholder="City"
@@ -326,7 +326,7 @@ const ProfileInfo = () => {
                   </div>
                 </div>
 
-                <div className="grid grid-cols-2 gap-2">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
                   <div>
                     <Input
                       placeholder="Postal Code"

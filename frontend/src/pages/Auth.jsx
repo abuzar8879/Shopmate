@@ -90,10 +90,10 @@ export default function Auth() {
 
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-purple-50 flex items-center justify-center py-12 px-4">
-      <div className="max-w-6xl w-full bg-white shadow-2xl rounded-2xl overflow-hidden grid lg:grid-cols-2">
-        {/* Left panel */}
-        <div className="bg-gradient-to-br from-blue-600 to-purple-600 text-white p-12 flex flex-col justify-between relative overflow-hidden">
+    <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-purple-50 flex items-center justify-center py-4 sm:py-8 px-4">
+      <div className="max-w-6xl w-full bg-white shadow-2xl rounded-2xl overflow-hidden grid grid-cols-1 lg:grid-cols-2">
+        {/* Left panel - hidden on mobile, visible on lg */}
+        <div className="hidden lg:flex bg-gradient-to-br from-blue-600 to-purple-600 text-white p-12 flex-col justify-between relative overflow-hidden min-h-[600px]">
           <div className="relative z-10">
             <div className="flex items-center mb-6">
               <ShoppingCart className="h-8 w-8 mr-3" />
@@ -134,10 +134,37 @@ export default function Auth() {
           </div>
         </div>
 
+        {/* Mobile-friendly brand header - visible only on mobile */}
+        <div className="lg:hidden bg-gradient-to-br from-blue-600 to-purple-600 text-white p-6 flex flex-col">
+          <div className="flex items-center justify-center mb-4">
+            <ShoppingCart className="h-8 w-8 mr-3" />
+            <h1 className="text-3xl font-bold">ShopMate</h1>
+          </div>
+          <p className="text-blue-100 text-center text-sm mb-4">
+            Your one-stop shop for amazing products
+          </p>
+          <div className="bg-white/10 rounded-lg p-3">
+            <ul className="space-y-2 text-xs text-blue-100">
+              <li className="flex items-center">
+                <ArrowRight className="h-3 w-3 mr-2" />
+                Quality products at great prices
+              </li>
+              <li className="flex items-center">
+                <ArrowRight className="h-3 w-3 mr-2" />
+                Secure checkout & fast delivery
+              </li>
+              <li className="flex items-center">
+                <ArrowRight className="h-3 w-3 mr-2" />
+                24/7 customer support
+              </li>
+            </ul>
+          </div>
+        </div>
+
         {/* Right panel: forms */}
-        <div className="p-12">
+        <div className="p-5 sm:p-8 md:p-12">
           <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-            <TabsList className="grid w-full grid-cols-2 mb-8">
+            <TabsList className="grid w-full grid-cols-2 mb-6 sm:mb-8">
               <TabsTrigger value="login" className="text-sm">Login</TabsTrigger>
               <TabsTrigger value="signup" className="text-sm">Sign Up</TabsTrigger>
             </TabsList>

@@ -17,7 +17,9 @@ const emptyProduct = {
   price: 0,
   category: '',
   stock: 0,
-  images: []
+  images: [],
+  tags: [],
+  variants: []
 };
 
 const ProductManagement = () => {
@@ -50,6 +52,7 @@ const ProductManagement = () => {
   // New state for selected files and previews
   const [selectedFiles, setSelectedFiles] = useState([]);
   const [previewUrls, setPreviewUrls] = useState([]);
+  const [variantsJson, setVariantsJson] = useState('[]');
 
   const handleFileChange = (e) => {
     const files = Array.from(e.target.files);
@@ -63,6 +66,7 @@ const ProductManagement = () => {
     setForm(emptyProduct);
     setSelectedFiles([]);
     setPreviewUrls([]);
+    setVariantsJson('[]');
     setIsEditing(true);
     setEditingProduct(null);
   };
@@ -71,6 +75,7 @@ const ProductManagement = () => {
     setForm(product);
     setSelectedFiles([]);
     setPreviewUrls(product.images || []);
+    setVariantsJson(JSON.stringify(product.variants || [], null, 2));
     setIsEditing(true);
     setEditingProduct(product);
   };
@@ -111,6 +116,13 @@ const ProductManagement = () => {
       }
 
       const productData = { ...form, images: imageUrls };
+      try {
+        const parsedVariants = JSON.parse(variantsJson || '[]');
+        productData.variants = Array.isArray(parsedVariants) ? parsedVariants : [];
+      } catch {
+        toast.error('Variants JSON is invalid');
+        return;
+      }
 
       if (editingProduct) {
         await axios.put(`${API}/api/products/${editingProduct.id}`, productData);
@@ -266,6 +278,16 @@ const ProductManagement = () => {
                         </div>
                       </div>
                     )}
+                  </div>
+                  <div className="md:col-span-2">
+                    <Label htmlFor="variants">Variants JSON (SKU/attributes/price/stock)</Label>
+                    <Textarea
+                      id="variants"
+                      value={variantsJson}
+                      onChange={(e) => setVariantsJson(e.target.value)}
+                      rows={6}
+                      placeholder='[{"sku":"TSHIRT-BLACK-M","attributes":{"size":"M","color":"Black"},"price":799,"stock":20}]'
+                    />
                   </div>
                 </div>
                 <div className="flex justify-end space-x-3 pt-4">

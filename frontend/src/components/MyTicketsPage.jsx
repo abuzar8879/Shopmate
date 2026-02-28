@@ -104,11 +104,11 @@ const MyTicketsPage = () => {
 
   return (
     <div className="max-w-6xl mx-auto">
-      <h1 className="text-4xl font-bold mb-8">My Tickets</h1>
+      <h1 className="text-3xl sm:text-4xl font-bold mb-8">My Tickets</h1>
 
       <Card>
         <CardHeader>
-          <div className="flex justify-between items-center">
+          <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-3">
             <CardTitle className="flex items-center">
               <Ticket className="h-5 w-5 mr-2" />
               Support Tickets
@@ -134,7 +134,7 @@ const MyTicketsPage = () => {
                         : 'border-gray-200 bg-white hover:border-gray-300'
                     }`}
                   >
-                    <div className="flex items-center justify-between">
+                    <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-3">
                       <div className="flex-1">
                         <div className="flex items-center gap-3 mb-2">
                           <span className="font-medium text-sm text-gray-600">
@@ -163,7 +163,7 @@ const MyTicketsPage = () => {
               {/* Selected Ticket Chat View */}
               {selectedTicket && (
                 <div className="border-t pt-6">
-                  <div className="flex items-center justify-between mb-4">
+                  <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4 mb-4">
                     <div>
                       <h3 className="text-xl font-semibold text-gray-900">
                         {selectedTicket.subject}
@@ -185,7 +185,7 @@ const MyTicketsPage = () => {
                         </p>
                       )}
                     </div>
-                    <div className="flex gap-2">
+                    <div className="flex flex-wrap gap-2">
                       <Button
                         variant="outline"
                         size="sm"
@@ -238,7 +238,7 @@ const MyTicketsPage = () => {
 
                   {/* Reply Input */}
                   {selectedTicket.status !== 'closed' && (
-                    <form onSubmit={(e) => handleReply(e, selectedTicket.id)} className="flex gap-2">
+                    <form onSubmit={(e) => handleReply(e, selectedTicket.id)} className="flex flex-col sm:flex-row gap-2">
                       <Input
                         placeholder="Type your reply..."
                         value={replyTexts[selectedTicket.id] || ''}

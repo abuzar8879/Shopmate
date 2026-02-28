@@ -1,4 +1,4 @@
-@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&family=Space+Grotesk:wght@500;600;700&display=swap');
 
 * {
   box-sizing: border-box;
@@ -7,14 +7,20 @@
 }
 
 body {
-  font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  font-family: 'Manrope', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
+  overflow-x: hidden;
+  background:
+    radial-gradient(1100px 600px at 10% -10%, rgba(59, 130, 246, 0.12), transparent 50%),
+    radial-gradient(1000px 500px at 100% 0%, rgba(16, 185, 129, 0.10), transparent 45%),
+    #f6f8fb;
 }
 
 .App {
   min-height: 100vh;
-  background-color: #fafafa;
+  background-color: transparent;
+  overflow-x: hidden;
 }
 
 /* Custom scrollbar */
@@ -181,6 +187,65 @@ select:focus {
 
 .shadow-strong {
   box-shadow: 0 8px 40px 0 rgba(0, 0, 0, 0.12);
+}
+
+/* Themed UI surfaces */
+.ui-display {
+  font-family: 'Space Grotesk', 'Manrope', sans-serif;
+  letter-spacing: -0.015em;
+}
+
+.mesh-bg {
+  background:
+    radial-gradient(900px 460px at 0% 0%, rgba(59, 130, 246, 0.11), transparent 55%),
+    radial-gradient(950px 520px at 100% 0%, rgba(20, 184, 166, 0.10), transparent 58%),
+    linear-gradient(180deg, #f8fbff 0%, #f3f6fb 100%);
+}
+
+.glass-nav {
+  background: rgba(255, 255, 255, 0.72);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  border-bottom: 1px solid rgba(148, 163, 184, 0.22);
+}
+
+.ui-surface {
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.96), rgba(248, 250, 253, 0.94));
+  border: 1px solid rgba(148, 163, 184, 0.25);
+  border-radius: 16px;
+  box-shadow:
+    0 18px 40px rgba(15, 23, 42, 0.08),
+    0 2px 6px rgba(15, 23, 42, 0.05);
+}
+
+.ui-surface-strong {
+  background: linear-gradient(165deg, rgba(255, 255, 255, 0.98), rgba(244, 248, 255, 0.95));
+  border: 1px solid rgba(148, 163, 184, 0.24);
+  box-shadow:
+    0 28px 60px rgba(15, 23, 42, 0.12),
+    inset 0 1px 0 rgba(255, 255, 255, 0.75);
+}
+
+.tilt-card {
+  transform-style: preserve-3d;
+}
+
+.tilt-card:hover {
+  transform: perspective(1000px) translateY(-6px) rotateX(3deg) rotateY(-2deg);
+}
+
+.pill-link {
+  border: 1px solid rgba(148, 163, 184, 0.24);
+  border-radius: 999px;
+  padding: 0.4rem 0.8rem;
+  background: rgba(255, 255, 255, 0.7);
+}
+
+.admin-shell {
+  background:
+    radial-gradient(800px 360px at -10% -10%, rgba(59, 130, 246, 0.10), transparent 60%),
+    radial-gradient(820px 360px at 110% 0%, rgba(14, 165, 233, 0.08), transparent 58%),
+    #f4f7fb;
 }
 
 /* Print styles */

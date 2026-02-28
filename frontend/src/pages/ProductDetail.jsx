@@ -4,11 +4,13 @@ import axios from 'axios';
 import { useAuth } from '../App';
 import { useCart } from '../App';
 import { Button } from '../components/ui/button';
+import { Textarea } from '../components/ui/textarea';
 import { Card, CardContent, CardHeader, CardTitle } from '../components/ui/card';
 import { Badge } from '../components/ui/badge';
 import { Separator } from '../components/ui/separator';
 import { toast } from 'sonner';
 import { ShoppingCart, Star, Plus, Minus, ArrowLeft, Package, Truck, Shield, RefreshCw } from 'lucide-react';
+import { trackProductView } from '../utils/productTracking';
 
 const BACKEND_URL = process.env.REACT_APP_BACKEND_URL?.replace(/\/$/, "");
 const API = BACKEND_URL;
@@ -28,10 +30,19 @@ export default function ProductDetail() {
   const [averageRating, setAverageRating] = useState(0);
   const [totalRatings, setTotalRatings] = useState(0);
   const [submittingRating, setSubmittingRating] = useState(false);
+  const [reviews, setReviews] = useState([]);
+  const [reviewText, setReviewText] = useState('');
+  const [submittingReview, setSubmittingReview] = useState(false);
+  const [recommendations, setRecommendations] = useState([]);
+  const [selectedVariantSku, setSelectedVariantSku] = useState('');
 
   useEffect(() => {
     fetchProduct();
     fetchRatings();
+    fetchReviews();
+    fetchRecommendations();
+    // Track product view
+    trackProductView(productId);
   }, [productId]);
 
   const fetchProduct = async () => {
@@ -78,20 +89,35 @@ export default function ProductDetail() {
 
   const handleQuantityChange = (change) => {
     const newQuantity = quantity + change;
-    if (newQuantity >= 1 && newQuantity <= (product?.stock || 0)) {
+    if (newQuantity >= 1 && newQuantity <= getAvailableStock()) {
       setQuantity(newQuantity);
     }
+  };
+
+  const getSelectedVariant = () => {
+    if (!product?.variants?.length || !selectedVariantSku) return null;
+    return product.variants.find(v => v.sku === selectedVariantSku) || null;
+  };
+
+  const getEffectivePrice = () => {
+    const variant = getSelectedVariant();
+    return variant?.price ?? product?.price ?? 0;
+  };
+
+  const getAvailableStock = () => {
+    const variant = getSelectedVariant();
+    return variant ? (variant.stock || 0) : (product?.stock || 0);
   };
 
   const handleAddToCart = () => {
     if (!product) return;
 
-    if (product.stock === 0) {
+    if (getAvailableStock() === 0) {
       toast.error('Product is out of stock');
       return;
     }
 
-    if (quantity > product.stock) {
+    if (quantity > getAvailableStock()) {
       toast.error('Not enough stock available');
       return;
     }
@@ -108,12 +134,12 @@ export default function ProductDetail() {
 
     if (!product) return;
 
-    if (product.stock === 0) {
+    if (getAvailableStock() === 0) {
       toast.error('Product is out of stock');
       return;
     }
 
-    if (quantity > product.stock) {
+    if (quantity > getAvailableStock()) {
       toast.error('Not enough stock available');
       return;
     }
@@ -121,13 +147,21 @@ export default function ProductDetail() {
     // Store buy now item in localStorage
     const buyNowItem = {
       product: product,
+      variant_sku: selectedVariantSku || null,
       quantity: quantity,
-      total: product.price * quantity
+      total: getEffectivePrice() * quantity
     };
     localStorage.setItem('buyNowItem', JSON.stringify(buyNowItem));
 
     // Navigate to checkout
     navigate('/checkout');
+  };
+  const fetchReviews = async () => {
+    try {
+      const response = await axios.get(`${API}/api/products/${productId}/reviews`);
+      setReviews(response.data);
+    } catch (error) {
+    }
   };
 
   const handleRatingSubmit = async () => {
@@ -154,6 +188,35 @@ export default function ProductDetail() {
       toast.error(error.response?.data?.message || 'You have already rated this product and cannot change your rating.');
     } finally {
       setSubmittingRating(false);
+    }
+  };
+  const handleReviewSubmit = async () => {
+    if (!user) {
+      toast.error('Please login to write reviews');
+      navigate('/auth');
+      return;
+    }
+    if (!reviewText.trim()) {
+      toast.error('Please enter review text');
+      return;
+    }
+    setSubmittingReview(true);
+    try {
+      await axios.post(`${API}/api/products/${productId}/reviews`, { text: reviewText.trim() });
+      toast.success('Review submitted successfully!');
+      setReviewText('');
+      fetchReviews();
+    } catch (error) {
+      toast.error(error.response?.data?.detail || 'Failed to submit review');
+    } finally {
+      setSubmittingReview(false);
+    }
+  };
+  const fetchRecommendations = async () => {
+    try {
+      const response = await axios.get(`${API}/api/products/${productId}/recommendations`);
+      setRecommendations(response.data);
+    } catch (error) {
     }
   };
 
@@ -249,16 +312,37 @@ export default function ProductDetail() {
                   </span>
                 </div>
               </div>
-              <p className="text-2xl font-bold text-blue-600 mb-4">₹{product.price}</p>
+              <p className="text-2xl font-bold text-blue-600 mb-4">₹{getEffectivePrice()}</p>
               <div className="flex items-center space-x-2 mb-4">
                 <Package className="h-4 w-4 text-gray-500" />
-                <span className={`text-sm ${product.stock > 0 ? 'text-green-600' : 'text-red-600'}`}>
-                  {product.stock > 0 ? `${product.stock} in stock` : 'Out of stock'}
+                <span className={`text-sm ${getAvailableStock() > 0 ? 'text-green-600' : 'text-red-600'}`}>
+                  {getAvailableStock() > 0 ? `${getAvailableStock()} in stock` : 'Out of stock'}
                 </span>
               </div>
             </div>
 
             <Separator />
+
+            {product.variants && product.variants.length > 0 && (
+              <>
+                <div className="space-y-2">
+                  <h3 className="text-lg font-semibold">Choose Variant</h3>
+                  <select
+                    value={selectedVariantSku}
+                    onChange={(e) => setSelectedVariantSku(e.target.value)}
+                    className="w-full border rounded-md px-3 py-2"
+                  >
+                    <option value="">Default Product</option>
+                    {product.variants.map((variant) => (
+                      <option key={variant.sku} value={variant.sku}>
+                        {Object.entries(variant.attributes || {}).map(([k, v]) => `${k}: ${v}`).join(', ')} | SKU: {variant.sku} | Stock: {variant.stock}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+                <Separator />
+              </>
+            )}
 
             {/* Quantity Selector */}
             <div className="space-y-4">
@@ -276,13 +360,13 @@ export default function ProductDetail() {
                   <button
                     onClick={() => handleQuantityChange(1)}
                     className="p-3 hover:bg-gray-100 disabled:opacity-50 disabled:cursor-not-allowed"
-                    disabled={quantity >= product.stock}
+                    disabled={quantity >= getAvailableStock()}
                   >
                     <Plus className="h-4 w-4" />
                   </button>
                 </div>
                 <span className="text-sm text-gray-600">
-                  Max: {product.stock}
+                  Max: {getAvailableStock()}
                 </span>
               </div>
             </div>
@@ -294,7 +378,7 @@ export default function ProductDetail() {
               <div className="flex space-x-4">
                 <Button
                   onClick={handleAddToCart}
-                  disabled={product.stock === 0}
+                  disabled={getAvailableStock() === 0}
                   className="flex-1 bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700"
                 >
                   <ShoppingCart className="h-4 w-4 mr-2" />
@@ -302,11 +386,30 @@ export default function ProductDetail() {
                 </Button>
                 <Button
                   onClick={handleBuyNow}
-                  disabled={product.stock === 0}
+                  disabled={getAvailableStock() === 0}
                   variant="outline"
                   className="flex-1"
                 >
                   Buy Now
+                </Button>
+                <Button
+                  onClick={async () => {
+                    if (!user) {
+                      toast.error('Please login to use wishlist');
+                      navigate('/auth');
+                      return;
+                    }
+                    try {
+                      await axios.post(`${API}/api/wishlist/${product.id}`);
+                      toast.success('Added to wishlist');
+                    } catch (error) {
+                      toast.error(error.response?.data?.detail || 'Failed to add to wishlist');
+                    }
+                  }}
+                  variant="ghost"
+                >
+                  <Star className="h-4 w-4 mr-2" />
+                  Wishlist
                 </Button>
               </div>
             </div>
@@ -362,6 +465,53 @@ export default function ProductDetail() {
                       {averageRating.toFixed(1)} out of 5 ({totalRatings} {totalRatings === 1 ? 'review' : 'reviews'})
                     </span>
                   </div>
+                  {user && (
+                    <div className="space-y-3 mb-4">
+                      <Textarea
+                        placeholder="Share your experience..."
+                        value={reviewText}
+                        onChange={(e) => setReviewText(e.target.value)}
+                      />
+                      <Button onClick={handleReviewSubmit} disabled={submittingReview || !reviewText.trim()} size="sm">
+                        {submittingReview ? 'Submitting...' : 'Submit Review'}
+                      </Button>
+                    </div>
+                  )}
+                  {reviews.length > 0 && (
+                    <div className="space-y-3">
+                      {reviews.map((rev) => (
+                        <Card key={rev.id}>
+                          <CardContent className="p-4">
+                            <div className="flex items-center justify-between mb-2">
+                              <div className="flex items-center gap-2">
+                                {rev.verified_purchase && <Badge variant="secondary">Verified Purchase</Badge>}
+                                {rev.is_hidden && <Badge variant="destructive">Hidden</Badge>}
+                              </div>
+                              <Button
+                                variant="ghost"
+                                size="sm"
+                                onClick={async () => {
+                                  if (!user) {
+                                    toast.error('Please login first');
+                                    return;
+                                  }
+                                  try {
+                                    await axios.post(`${API}/api/products/${productId}/reviews/${rev.id}/helpful`);
+                                    fetchReviews();
+                                  } catch {
+                                    toast.error('Failed to vote helpful');
+                                  }
+                                }}
+                              >
+                                Helpful ({rev.helpful_count || 0})
+                              </Button>
+                            </div>
+                            <p className="text-gray-800">{rev.text}</p>
+                          </CardContent>
+                        </Card>
+                      ))}
+                    </div>
+                  )}
                 </div>
               </div>
             )}
@@ -384,9 +534,42 @@ export default function ProductDetail() {
                 <p className="text-xs text-gray-600">30-day return policy</p>
               </div>
             </div>
+            <Separator className="my-6" />
+            <div>
+              <h3 className="text-lg font-semibold mb-3">You may also like</h3>
+              {recommendations.length === 0 ? (
+                <p className="text-sm text-gray-600">No recommendations available</p>
+              ) : (
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                  {recommendations.map((rec) => (
+                    <Card key={rec.id} className="overflow-hidden">
+                      <CardContent className="p-4">
+                        <div className="w-full h-32 bg-gray-100 rounded mb-3 overflow-hidden">
+                          {rec.images && rec.images.length > 0 ? (
+                            <img src={rec.images[0]} alt={rec.name} className="w-full h-full object-cover" />
+                          ) : (
+                            <div className="w-full h-full flex items-center justify-center">
+                              <Package className="h-8 w-8 text-gray-400" />
+                            </div>
+                          )}
+                        </div>
+                        <h4 className="font-semibold line-clamp-2">{rec.name}</h4>
+                        <p className="text-sm text-gray-600">₹{rec.price}</p>
+                        <div className="mt-2">
+                          <Button variant="outline" size="sm" onClick={() => navigate(`/product/${rec.id}`)}>
+                            View
+                          </Button>
+                        </div>
+                      </CardContent>
+                    </Card>
+                  ))}
+                </div>
+              )}
+            </div>
           </div>
         </div>
       </div>
     </div>
   );
 }
+

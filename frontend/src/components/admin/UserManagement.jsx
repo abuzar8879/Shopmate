@@ -81,17 +81,17 @@ const UserManagement = () => {
   return (
     <div className="min-h-screen bg-gray-50 py-8">
       <div className="max-w-6xl mx-auto px-4">
-        <div className="flex justify-between items-center mb-6">
-          <div className="flex items-center space-x-4">
+        <div className="flex flex-col gap-3 md:flex-row md:justify-between md:items-center mb-6">
+          <div className="flex items-center space-x-3 sm:space-x-4">
             <a href="/admin">
               <Button className="flex items-center space-x-2 bg-black text-white hover:bg-gray-800">
                 <ArrowLeft className="h-4 w-4" />
                 <span>Back</span>
               </Button>
             </a>
-            <h1 className="text-3xl font-bold">Manage Users</h1>
+            <h1 className="text-2xl sm:text-3xl font-bold">Manage Users</h1>
           </div>
-          <div className="flex items-center space-x-4">
+          <div className="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-4">
             {lastRefresh && (
               <span className="text-sm text-gray-500">
                 Last updated: {formatDate(lastRefresh)}
