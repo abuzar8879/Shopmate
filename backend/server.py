@@ -759,7 +759,7 @@ async def update_user_profile(
         # Check if email is being updated and if it's already taken by another user
         if profile_data.email and profile_data.email != current_user.email:
             existing_user = await db.users.find_one({"email": profile_data.email})
-            if existing_user and existing_user["id"] != current_user.id:
+            if existing_user and existing_user.get("id") != current_user.id:
                 raise HTTPException(status_code=400, detail="Email already registered to another user")
 
         # Prepare update data
@@ -789,10 +789,19 @@ async def update_user_profile(
             )
 
             if result.matched_count == 0:
-                raise HTTPException(status_code=404, detail="User not found")
+                logging.warning(f"Profile update found no user by id={current_user.id}. Trying fallback by email.")
+                if current_user.email:
+                    result = await db.users.update_one(
+                        {"email": current_user.email},
+                        {"$set": update_data}
+                    )
+                if result.matched_count == 0:
+                    raise HTTPException(status_code=404, detail="User not found")
 
         # Fetch and return updated user
         updated_user_doc = await db.users.find_one({"id": current_user.id})
+        if not updated_user_doc and current_user.email:
+            updated_user_doc = await db.users.find_one({"email": current_user.email})
         if not updated_user_doc:
             raise HTTPException(status_code=404, detail="User not found")
 
