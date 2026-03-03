@@ -124,6 +124,7 @@ async def validation_exception_handler(request: Request, exc: RequestValidationE
     )
 
 # CORS Middleware
+# CORS Middleware
 default_origins = [
     "https://my-ecommerce-app-mocha.vercel.app",
     "https://shopmate-mocha.vercel.app",
@@ -136,10 +137,12 @@ default_origins = [
 # Example: CORS_ORIGINS=https://foo.vercel.app,https://bar.example.com
 extra_origins = [o.strip() for o in os.environ.get("CORS_ORIGINS", "").split(",") if o.strip()]
 origins = list(dict.fromkeys(default_origins + extra_origins))
+vercel_origin_regex = r"^https://(shopmate|my-ecommerce-app)(-[a-z0-9-]+)?\.vercel\.app$"
 
 app.add_middleware(
     CORSMiddleware,
     allow_origins=origins,
+    allow_origin_regex=vercel_origin_regex,
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
