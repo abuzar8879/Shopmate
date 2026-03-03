@@ -15,7 +15,7 @@ import { toast } from 'sonner';
 import { Toaster } from './components/ui/sonner';
 
 // Icons
-import { ShoppingCart, User, Star, Package, Users, BarChart3, Ticket, Plus, Minus, CreditCard, LogOut, X, Search, Filter, ArrowRight, Mail, Phone, MapPin, HelpCircle, Trash2, Send, Heart, RefreshCw, Home, Tag, Settings } from 'lucide-react';
+import { ShoppingCart, User, Star, Package, Users, BarChart3, Ticket, Plus, Minus, CreditCard, LogOut, X, Search, Filter, ArrowRight, Mail, Phone, MapPin, HelpCircle, Trash2, Send, Heart, RefreshCw, Home, Tag, Settings, Menu } from 'lucide-react';
 
 // Import Auth component
 import Auth from './pages/Auth';
@@ -407,10 +407,13 @@ const Navigation = () => {
     return null;
   }
 
+  const primaryLinks = [
+    { href: "/products", label: "Products", icon: Package },
+    { href: "/help", label: "Help", icon: HelpCircle },
+    { href: "/contact", label: "Contact", icon: Mail }
+  ];
+
   const userMenuItems = [
-    { href: '/products', label: 'Products', icon: Package },
-    { href: '/help', label: 'Help', icon: HelpCircle },
-    { href: '/contact', label: 'Contact', icon: Mail },
     { href: '/profile/settings', label: 'Settings', icon: Settings },
     { href: '/profile/tickets', label: 'My Tickets', icon: Ticket },
     { href: '/profile/orders', label: 'Order History', icon: Package },
@@ -419,95 +422,108 @@ const Navigation = () => {
   ];
 
   return (
-    <nav className="glass-nav sticky top-0 z-50">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative">
-        <div className="flex justify-between items-center h-16">
-          <div className="flex items-center">
-            <a href="/" className="ui-display text-xl font-bold text-gray-900">
-              ShopMate
+    <>
+      <nav className="glass-nav sticky top-0 z-50">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="h-16 flex items-center gap-3">
+            <a
+              href="/"
+              className="ui-display text-xl font-bold text-gray-900 tracking-tight flex items-center gap-2"
+            >
+              <span className="inline-flex h-8 w-8 items-center justify-center rounded-xl bg-gradient-to-br from-blue-600 to-cyan-500 text-white text-sm font-bold">S</span>
+              <span>ShopMate</span>
             </a>
-          </div>
 
-          <div />
+            <div className="hidden md:flex items-center gap-2 ml-6">
+              {primaryLinks.map((item) => (
+                <a
+                  key={item.href}
+                  href={item.href}
+                  className="pill-link text-gray-700 hover:text-gray-900 transition-colors text-sm font-medium"
+                >
+                  {item.label}
+                </a>
+              ))}
+            </div>
 
-          <div className="flex items-center space-x-2 sm:space-x-4">
-            {user?.role !== 'admin' && (
-              <a href="/cart" className="relative p-2 text-gray-700 hover:text-gray-900 transition-colors ui-surface">
-                <ShoppingCart className="h-6 w-6" />
+            <div className="ml-auto flex items-center gap-2 sm:gap-3">
+              <a href="/cart" className="relative p-2.5 text-gray-700 hover:text-gray-900 transition-colors ui-surface">
+                <ShoppingCart className="h-5 w-5" />
                 {getTotalItems() > 0 && (
                   <Badge className="absolute -top-1 -right-1 px-2 py-1 text-xs bg-red-500 text-white">
                     {getTotalItems()}
                   </Badge>
                 )}
               </a>
-            )}
 
-            {authState.isAuthenticated && authState.user ? (
-              <div className="hidden sm:flex items-center space-x-4">
-                {authState.user.role === 'admin' && (
-                  <a href="/admin" className="pill-link text-gray-700 hover:text-gray-900 transition-colors">
-                    Admin
-                  </a>
-                )}
+              {authState.isAuthenticated && authState.user ? (
                 <button
                   type="button"
                   onClick={() => setSidebarOpen(true)}
-                  className="pill-link text-gray-700 hover:text-gray-900 transition-colors"
-                  aria-label="Open profile menu"
+                  className="hidden sm:inline-flex items-center gap-2 pill-link text-gray-700 hover:text-gray-900 transition-colors"
+                  aria-label="Open account menu"
                 >
-                  <User className="h-5 w-5" />
+                  <User className="h-4 w-4" />
+                  <span className="text-sm font-medium max-w-[120px] truncate">
+                    {authState.user.name || "Account"}
+                  </span>
                 </button>
-              </div>
-            ) : (
-              <div className="hidden sm:flex items-center space-x-2">
-                <a href="/auth">
-                  <Button variant="ghost" size="sm" className="pill-link">Login</Button>
-                </a>
-                <a href="/auth?tab=signup">
-                  <Button size="sm" className="ui-surface">Sign Up</Button>
-                </a>
-              </div>
-            )}
+              ) : (
+                <div className="hidden sm:flex items-center space-x-2">
+                  <a href="/auth">
+                    <Button variant="ghost" size="sm" className="pill-link">Login</Button>
+                  </a>
+                  <a href="/auth?tab=signup">
+                    <Button size="sm" className="ui-surface">Sign Up</Button>
+                  </a>
+                </div>
+              )}
 
-            {authState.isAuthenticated && (
               <button
                 type="button"
-                className="sm:hidden pill-link text-gray-700 hover:text-gray-900 transition-colors"
+                className="sm:hidden inline-flex items-center gap-2 pill-link text-gray-700 hover:text-gray-900 transition-colors"
                 onClick={() => setSidebarOpen(true)}
-                aria-label="Open profile menu"
+                aria-label="Open menu"
               >
-                <User className="h-5 w-5" />
+                <Menu className="h-4 w-4" />
               </button>
-            )}
+            </div>
           </div>
         </div>
-      </div>
-      {authState.isAuthenticated && sidebarOpen && (
-        <div className="fixed inset-0 z-[60] bg-black/40" onClick={() => setSidebarOpen(false)}>
+      </nav>
+
+      {sidebarOpen && (
+        <div className="fixed inset-0 z-[70] bg-slate-900/45 backdrop-blur-[1px]" onClick={() => setSidebarOpen(false)}>
           <aside
-            className="absolute top-0 right-0 h-full w-80 max-w-[90vw] bg-white shadow-2xl p-5 overflow-y-auto"
+            className="absolute inset-y-0 right-0 w-[22rem] max-w-[92vw] bg-white border-l border-slate-200 shadow-2xl p-5 overflow-y-auto"
             onClick={(e) => e.stopPropagation()}
           >
-            <div className="flex items-center justify-between mb-5">
-              <h3 className="ui-display text-lg font-semibold text-gray-900">Menu</h3>
+            <div className="flex items-center justify-between mb-6">
+              <div>
+                <p className="text-xs uppercase tracking-[0.18em] text-slate-500">Navigation</p>
+                <h3 className="ui-display text-xl font-semibold text-slate-900">
+                  {authState.isAuthenticated ? "My Account" : "Welcome"}
+                </h3>
+              </div>
               <button
                 type="button"
                 onClick={() => setSidebarOpen(false)}
-                className="p-2 rounded-md hover:bg-gray-100"
+                className="p-2 rounded-full bg-slate-100 hover:bg-slate-200"
                 aria-label="Close menu"
               >
-                <X className="h-5 w-5" />
+                <X className="h-5 w-5 text-slate-700" />
               </button>
             </div>
-            <div className="space-y-1">
-              {userMenuItems.map((item) => {
+
+            <div className="space-y-1 mb-5">
+              {primaryLinks.map((item) => {
                 const Icon = item.icon;
                 return (
                   <a
                     key={item.href}
                     href={item.href}
                     onClick={() => setSidebarOpen(false)}
-                    className="flex items-center gap-3 px-3 py-2 rounded-lg text-gray-700 hover:bg-gray-100 hover:text-gray-900 transition-colors"
+                    className="flex items-center gap-3 px-3 py-2.5 rounded-xl text-slate-700 hover:bg-slate-100 hover:text-slate-900 transition-colors"
                   >
                     <Icon className="h-4 w-4" />
                     <span>{item.label}</span>
@@ -515,31 +531,59 @@ const Navigation = () => {
                 );
               })}
             </div>
-            <div className="pt-4 mt-4 border-t">
-              <a
-                href="/profile"
-                onClick={() => setSidebarOpen(false)}
-                className="flex items-center gap-3 px-3 py-2 rounded-lg text-gray-700 hover:bg-gray-100 hover:text-gray-900 transition-colors"
-              >
-                <User className="h-4 w-4" />
-                <span>Profile</span>
-              </a>
-              <Button
-                variant="outline"
-                className="w-full mt-3"
-                onClick={() => {
-                  setSidebarOpen(false);
-                  logout();
-                }}
-              >
-                <LogOut className="h-4 w-4 mr-2" />
-                Logout
-              </Button>
-            </div>
+
+            {authState.isAuthenticated ? (
+              <>
+                <div className="pt-4 border-t border-slate-200 space-y-1">
+                  {userMenuItems.map((item) => {
+                    const Icon = item.icon;
+                    return (
+                      <a
+                        key={item.href}
+                        href={item.href}
+                        onClick={() => setSidebarOpen(false)}
+                        className="flex items-center gap-3 px-3 py-2.5 rounded-xl text-slate-700 hover:bg-slate-100 hover:text-slate-900 transition-colors"
+                      >
+                        <Icon className="h-4 w-4" />
+                        <span>{item.label}</span>
+                      </a>
+                    );
+                  })}
+                  <a
+                    href="/profile"
+                    onClick={() => setSidebarOpen(false)}
+                    className="flex items-center gap-3 px-3 py-2.5 rounded-xl text-slate-700 hover:bg-slate-100 hover:text-slate-900 transition-colors"
+                  >
+                    <User className="h-4 w-4" />
+                    <span>Profile</span>
+                  </a>
+                </div>
+                <Button
+                  variant="outline"
+                  className="w-full mt-5"
+                  onClick={() => {
+                    setSidebarOpen(false);
+                    logout();
+                  }}
+                >
+                  <LogOut className="h-4 w-4 mr-2" />
+                  Logout
+                </Button>
+              </>
+            ) : (
+              <div className="pt-4 border-t border-slate-200 grid grid-cols-2 gap-2">
+                <a href="/auth" onClick={() => setSidebarOpen(false)}>
+                  <Button variant="outline" className="w-full">Login</Button>
+                </a>
+                <a href="/auth?tab=signup" onClick={() => setSidebarOpen(false)}>
+                  <Button className="w-full bg-gradient-to-r from-blue-600 to-cyan-500 text-white hover:from-blue-700 hover:to-cyan-600">Sign Up</Button>
+                </a>
+              </div>
+            )}
           </aside>
         </div>
       )}
-    </nav>
+    </>
   );
 };
 
