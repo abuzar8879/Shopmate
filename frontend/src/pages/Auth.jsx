@@ -41,8 +41,10 @@ export default function Auth() {
     if (!name || name.length < 3)
       return 'Name must be at least 3 characters';
     if (!email || !/\S+@\S+\.\S+/.test(email)) return 'Invalid email format';
-    if (!password || password.length < 6)
-      return 'Password must be at least 6 characters';
+    const strongPassword =
+      /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[^A-Za-z0-9]).{8,}$/;
+    if (!strongPassword.test(password || ''))
+      return 'Password must be 8+ chars and include uppercase, lowercase, number, and special character';
     return null;
   }
 
@@ -63,7 +65,7 @@ export default function Auth() {
       setActiveTab('login');
       setSignupData({ name: '', email: '', password: '', role: 'user' });
     } catch (err) {
-      const errMsg = err.response?.data?.message || 'Signup failed';
+      const errMsg = err.response?.data?.detail || err.response?.data?.message || 'Signup failed';
       toast.error(errMsg);    
     } finally {
       setLoading(false);

@@ -100,6 +100,12 @@ app.add_exception_handler(RateLimitExceeded, _rate_limit_exceeded_handler)
 
 api_router = APIRouter(prefix="/api")
 
+
+@app.get("/")
+async def app_root():
+    """Root health endpoint for platform checks."""
+    return {"message": "E-Commerce API is running", "api_prefix": "/api"}
+
 # Add validation error handler
 @app.exception_handler(RequestValidationError)
 async def validation_exception_handler(request: Request, exc: RequestValidationError):

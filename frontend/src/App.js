@@ -116,13 +116,13 @@ const AuthProvider = ({ children }) => {
     }
   };
 
-  const register = async (username, email, password) => {
+  const register = async (name, email, password) => {
     try {
-      const response = await axios.post(`${API}/api/auth/register`, { username, email, password });
-      toast.success('Signup successful! Please check your email for OTP verification.');
+      const response = await axios.post(`${API}/api/auth/register`, { name, email, password, role: 'user' });
+      toast.success('Account created successfully! You can now log in.');
       return response.data;
     } catch (error) {
-      toast.error(error.response?.data?.message || 'Signup failed');
+      toast.error(error.response?.data?.detail || error.response?.data?.message || 'Signup failed');
       throw error;
     }
   };
