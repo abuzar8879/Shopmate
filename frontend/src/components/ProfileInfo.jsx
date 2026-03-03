@@ -357,7 +357,7 @@ const ProfileInfo = () => {
 
     const payload = {
       name: data.name.trim(),
-      email: data.email.trim(),
+      email: (user?.email || data.email || '').trim(),
       mobile_number: cleanedMobile,
       avatar_url: data.avatar_url || '',
       preferred_payment_method: data.preferred_payment_method,
@@ -668,7 +668,18 @@ const ProfileInfo = () => {
                 </div>
                 <div>
                   <Label htmlFor="email">Email Address</Label>
-                  <Input id="email" type="email" {...form.register('email')} placeholder="Enter your email" disabled={isSaving} />
+                  <Input
+                    id="email"
+                    type="email"
+                    {...form.register('email')}
+                    placeholder="Email cannot be edited"
+                    readOnly
+                    disabled={isSaving}
+                    className="bg-slate-50 text-slate-600 cursor-not-allowed"
+                  />
+                  <p className="text-xs text-slate-500 mt-1">
+                    Email is locked for security. Update it via verified support flow.
+                  </p>
                   {form.formState.errors.email && (
                     <p className="text-sm text-red-600 mt-1">{form.formState.errors.email.message}</p>
                   )}

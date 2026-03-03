@@ -756,18 +756,19 @@ async def update_user_profile(
     current_user: User = Depends(get_current_user)
 ):
     try:
-        # Check if email is being updated and if it's already taken by another user
+        # Email change is intentionally blocked in profile edit.
+        # Use a dedicated, verified flow (OTP/password re-auth) for email updates.
         if profile_data.email and profile_data.email != current_user.email:
-            existing_user = await db.users.find_one({"email": profile_data.email})
-            if existing_user and existing_user.get("id") != current_user.id:
-                raise HTTPException(status_code=400, detail="Email already registered to another user")
+            raise HTTPException(
+                status_code=403,
+                detail="Email update is restricted. Please use a verified security flow."
+            )
 
         # Prepare update data
         update_data = {}
         if profile_data.name is not None:
             update_data["name"] = profile_data.name
-        if profile_data.email is not None:
-            update_data["email"] = profile_data.email
+        # Do not update email from this endpoint.
         if profile_data.mobile_number is not None:
             update_data["mobile_number"] = profile_data.mobile_number
         if profile_data.delivery_address is not None:
