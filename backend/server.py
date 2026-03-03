@@ -69,6 +69,17 @@ db = client[db_name]
 RECOMMEND_CACHE: Dict[str, Dict[str, Any]] = {}
 RECOMMEND_TTL_SECONDS = 600
 
+
+def normalize_mongo_for_json(value: Any) -> Any:
+    """Recursively convert Mongo-specific values to JSON-safe Python values."""
+    if isinstance(value, ObjectId):
+        return str(value)
+    if isinstance(value, list):
+        return [normalize_mongo_for_json(item) for item in value]
+    if isinstance(value, dict):
+        return {k: normalize_mongo_for_json(v) for k, v in value.items()}
+    return value
+
 # JWT Configuration
 JWT_SECRET = os.environ.get('JWT_SECRET', 'your-super-secret-key-change-in-production')
 JWT_ALGORITHM = 'HS256'
@@ -2081,14 +2092,23 @@ async def get_returns_overview(admin_user: User = Depends(get_admin_user)):
 @api_router.get("/orders", response_model=List[Order])
 async def get_user_orders(current_user: User = Depends(get_current_user)):
     orders = await db.orders.find({"user_id": current_user.id}).sort("created_at", -1).to_list(50)
-    return [Order(**order) for order in orders]
+    normalized_orders: List[Order] = []
+    for order in orders:
+        clean = normalize_mongo_for_json(order)
+        if "_id" in clean and not clean.get("id"):
+            clean["id"] = str(clean["_id"])
+        clean.pop("_id", None)
+        normalized_orders.append(Order(**clean))
+    return normalized_orders
 
 @api_router.get("/admin/orders")
 async def get_all_orders(admin_user: User = Depends(get_admin_user)):
     orders = await db.orders.find({}).sort("created_at", -1).to_list(100)
 
-    # Convert ObjectId to string for JSON serialization and ensure id field exists
+    # Convert ObjectId values recursively and ensure id field exists
+    normalized_orders = []
     for order in orders:
+        order = normalize_mongo_for_json(order)
         if "_id" in order:
             order["id"] = str(order["_id"])
             del order["_id"]
@@ -2098,9 +2118,10 @@ async def get_all_orders(admin_user: User = Depends(get_admin_user)):
         # Ensure status field exists
         if "status" not in order:
             order["status"] = "pending"
+        normalized_orders.append(order)
 
     # Return raw order data without strict validation for admin purposes
-    return orders
+    return normalized_orders
 
 @api_router.post("/orders")
 async def create_order(order_data: OrderCreate, current_user: User = Depends(get_current_user)):

@@ -465,7 +465,7 @@ const OrderHistoryPage = () => {
               </div>
 
               <div className="flex justify-end gap-2 pt-4 border-t border-gray-200">
-                {['delivered', 'shipped'].includes(selectedOrder.status?.toLowerCase()) ? (
+                {['delivered', 'shipped'].includes(selectedOrder.status?.toLowerCase()) && hasReturnEligibleItems(selectedOrder) ? (
                   <Button
                     variant="outline"
                     size="sm"
@@ -475,6 +475,15 @@ const OrderHistoryPage = () => {
                     }}
                   >
                     Return/Refund
+                  </Button>
+                ) : ['delivered', 'shipped'].includes(selectedOrder.status?.toLowerCase()) ? (
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    disabled
+                    title={allRefunded(selectedOrder) ? 'All items refunded' : 'No items eligible'}
+                  >
+                    {allRefunded(selectedOrder) ? 'Refunded' : 'Return/Refund'}
                   </Button>
                 ) : (
                   <Button variant="outline" size="sm" disabled title="Return/Refund available after shipment/delivery">

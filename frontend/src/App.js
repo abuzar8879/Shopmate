@@ -15,7 +15,7 @@ import { toast } from 'sonner';
 import { Toaster } from './components/ui/sonner';
 
 // Icons
-import { ShoppingCart, User, Star, Package, Users, BarChart3, Ticket, Plus, Minus, CreditCard, LogOut, Menu, X, Search, Filter, ArrowRight, Mail, Phone, MapPin, HelpCircle, Trash2, Send, Heart, RefreshCw, Home, Tag } from 'lucide-react';
+import { ShoppingCart, User, Star, Package, Users, BarChart3, Ticket, Plus, Minus, CreditCard, LogOut, X, Search, Filter, ArrowRight, Mail, Phone, MapPin, HelpCircle, Trash2, Send, Heart, RefreshCw, Home, Tag, Settings } from 'lucide-react';
 
 // Import Auth component
 import Auth from './pages/Auth';
@@ -384,7 +384,7 @@ const useCart = () => {
 const Navigation = () => {
   const { user, logout } = useAuth();
   const { getTotalItems } = useCart();
-  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const [sidebarOpen, setSidebarOpen] = useState(false);
   const [authState, setAuthState] = useState({ user: null, isAuthenticated: false });
 
   // Sync auth state with context
@@ -393,7 +393,7 @@ const Navigation = () => {
   }, [user]);
 
   useEffect(() => {
-    if (mobileMenuOpen) {
+    if (sidebarOpen) {
       document.body.style.overflow = 'hidden';
     } else {
       document.body.style.overflow = '';
@@ -401,11 +401,22 @@ const Navigation = () => {
     return () => {
       document.body.style.overflow = '';
     };
-  }, [mobileMenuOpen]);
+  }, [sidebarOpen]);
 
   if (user?.role === 'admin') {
     return null;
   }
+
+  const userMenuItems = [
+    { href: '/products', label: 'Products', icon: Package },
+    { href: '/help', label: 'Help', icon: HelpCircle },
+    { href: '/contact', label: 'Contact', icon: Mail },
+    { href: '/profile/settings', label: 'Settings', icon: Settings },
+    { href: '/profile/tickets', label: 'My Tickets', icon: Ticket },
+    { href: '/profile/orders', label: 'Order History', icon: Package },
+    { href: '/profile/wishlist', label: 'Wishlist', icon: Heart },
+    { href: '/profile/returns', label: 'Returns', icon: RefreshCw }
+  ];
 
   return (
     <nav className="glass-nav sticky top-0 z-50">
@@ -417,18 +428,7 @@ const Navigation = () => {
             </a>
           </div>
 
-          
-          {/* Desktop Navigation  */}
-          
-          <div className="hidden md:flex items-center space-x-8">
-            {user?.role !== 'admin' && (
-              <>
-                <a href="/products" className="text-gray-700 hover:text-gray-900 transition-colors">Products</a>
-                <a href="/help" className="text-gray-700 hover:text-gray-900 transition-colors">Help</a>
-                <a href="/contact" className="text-gray-700 hover:text-gray-900 transition-colors">Contact</a>
-              </>
-            )}
-          </div>
+          <div />
 
           <div className="flex items-center space-x-2 sm:space-x-4">
             {user?.role !== 'admin' && (
@@ -449,17 +449,14 @@ const Navigation = () => {
                     Admin
                   </a>
                 )}
-                <a href="/profile" className="pill-link text-gray-700 hover:text-gray-900 transition-colors">
-                  <User className="h-6 w-6" />
-                </a>
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  onClick={logout}
-                  className="text-gray-700 hover:text-gray-900 pill-link"
+                <button
+                  type="button"
+                  onClick={() => setSidebarOpen(true)}
+                  className="pill-link text-gray-700 hover:text-gray-900 transition-colors"
+                  aria-label="Open profile menu"
                 >
-                  <LogOut className="h-4 w-4" />
-                </Button>
+                  <User className="h-5 w-5" />
+                </button>
               </div>
             ) : (
               <div className="hidden sm:flex items-center space-x-2">
@@ -472,44 +469,76 @@ const Navigation = () => {
               </div>
             )}
 
-            {/* Mobile menu button */}
-            <Button
-              variant="ghost"
-              size="sm"
-              className="md:hidden"
-              onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
-            >
-              {mobileMenuOpen ? <X className="h-6 w-6" /> : <Menu className="h-6 w-6" />}
-            </Button>
+            {authState.isAuthenticated && (
+              <button
+                type="button"
+                className="sm:hidden pill-link text-gray-700 hover:text-gray-900 transition-colors"
+                onClick={() => setSidebarOpen(true)}
+                aria-label="Open profile menu"
+              >
+                <User className="h-5 w-5" />
+              </button>
+            )}
           </div>
         </div>
-
-        {/* Mobile Navigation */}
-        {mobileMenuOpen && (
-          <div className="md:hidden absolute top-16 left-0 right-0 z-40 border-t bg-white/95 py-4 px-4 shadow-lg backdrop-blur">
-            <div className="flex flex-col space-y-3">
-              {user?.role !== 'admin' && (
-                <>
-                  <a href="/products" onClick={() => setMobileMenuOpen(false)} className="text-gray-700 hover:text-gray-900 transition-colors">Products</a>
-                  <a href="/help" onClick={() => setMobileMenuOpen(false)} className="text-gray-700 hover:text-gray-900 transition-colors">Help</a>
-                  <a href="/contact" onClick={() => setMobileMenuOpen(false)} className="text-gray-700 hover:text-gray-900 transition-colors">Contact</a>
-                </>
-              )}
-              {authState.isAuthenticated ? (
-                <>
-                  <a href="/profile" onClick={() => setMobileMenuOpen(false)} className="text-gray-700 hover:text-gray-900 transition-colors">Profile</a>
-                  <Button variant="outline" size="sm" onClick={logout} className="w-full">Logout</Button>
-                </>
-              ) : (
-                <>
-                  <a href="/auth" onClick={() => setMobileMenuOpen(false)}><Button variant="outline" size="sm" className="w-full">Login</Button></a>
-                  <a href="/auth?tab=signup" onClick={() => setMobileMenuOpen(false)}><Button size="sm" className="w-full">Sign Up</Button></a>
-                </>
-              )}
-            </div>
-          </div>
-        )}
       </div>
+      {authState.isAuthenticated && sidebarOpen && (
+        <div className="fixed inset-0 z-[60] bg-black/40" onClick={() => setSidebarOpen(false)}>
+          <aside
+            className="absolute top-0 right-0 h-full w-80 max-w-[90vw] bg-white shadow-2xl p-5 overflow-y-auto"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="flex items-center justify-between mb-5">
+              <h3 className="ui-display text-lg font-semibold text-gray-900">Menu</h3>
+              <button
+                type="button"
+                onClick={() => setSidebarOpen(false)}
+                className="p-2 rounded-md hover:bg-gray-100"
+                aria-label="Close menu"
+              >
+                <X className="h-5 w-5" />
+              </button>
+            </div>
+            <div className="space-y-1">
+              {userMenuItems.map((item) => {
+                const Icon = item.icon;
+                return (
+                  <a
+                    key={item.href}
+                    href={item.href}
+                    onClick={() => setSidebarOpen(false)}
+                    className="flex items-center gap-3 px-3 py-2 rounded-lg text-gray-700 hover:bg-gray-100 hover:text-gray-900 transition-colors"
+                  >
+                    <Icon className="h-4 w-4" />
+                    <span>{item.label}</span>
+                  </a>
+                );
+              })}
+            </div>
+            <div className="pt-4 mt-4 border-t">
+              <a
+                href="/profile"
+                onClick={() => setSidebarOpen(false)}
+                className="flex items-center gap-3 px-3 py-2 rounded-lg text-gray-700 hover:bg-gray-100 hover:text-gray-900 transition-colors"
+              >
+                <User className="h-4 w-4" />
+                <span>Profile</span>
+              </a>
+              <Button
+                variant="outline"
+                className="w-full mt-3"
+                onClick={() => {
+                  setSidebarOpen(false);
+                  logout();
+                }}
+              >
+                <LogOut className="h-4 w-4 mr-2" />
+                Logout
+              </Button>
+            </div>
+          </aside>
+        </div>
+      )}
     </nav>
   );
 };
