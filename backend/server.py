@@ -182,6 +182,10 @@ class UserProfileUpdate(BaseModel):
     email: Optional[EmailStr] = None
     mobile_number: Optional[str] = None
     delivery_address: Optional[DeliveryAddress] = None
+    avatar_url: Optional[str] = None
+    preferred_payment_method: Optional[str] = None
+    language: Optional[str] = None
+    notification_preference: Optional[str] = None
 
     @validator('mobile_number')
     def validate_mobile_number(cls, v):
@@ -210,12 +214,43 @@ class UserProfileUpdate(BaseModel):
             v.postal_code = cleaned_postal_code
         return v
 
+    @validator('preferred_payment_method')
+    def validate_preferred_payment_method(cls, v):
+        if v is None:
+            return v
+        allowed = {"card", "upi", "net_banking", "wallet", "cash_on_delivery"}
+        if v not in allowed:
+            raise ValueError('Invalid preferred payment method')
+        return v
+
+    @validator('language')
+    def validate_language(cls, v):
+        if v is None:
+            return v
+        allowed = {"en", "hi", "bn", "ta", "te", "mr", "gu", "kn", "ml", "pa", "ur"}
+        if v not in allowed:
+            raise ValueError('Invalid language')
+        return v
+
+    @validator('notification_preference')
+    def validate_notification_preference(cls, v):
+        if v is None:
+            return v
+        allowed = {"all", "important_only", "none"}
+        if v not in allowed:
+            raise ValueError('Invalid notification preference')
+        return v
+
 class User(UserBase):
     id: str = Field(default_factory=lambda: str(uuid.uuid4()))
     created_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
     mobile_number: Optional[str] = None
     delivery_address: Optional[Dict[str, Any]] = None  # Make it flexible to handle different address formats
     two_factor_enabled: Optional[bool] = False
+    avatar_url: Optional[str] = None
+    preferred_payment_method: Optional[str] = None
+    language: Optional[str] = "en"
+    notification_preference: Optional[str] = "all"
 
 
 
@@ -737,6 +772,14 @@ async def update_user_profile(
             update_data["mobile_number"] = profile_data.mobile_number
         if profile_data.delivery_address is not None:
             update_data["delivery_address"] = profile_data.delivery_address.dict()
+        if profile_data.avatar_url is not None:
+            update_data["avatar_url"] = profile_data.avatar_url
+        if profile_data.preferred_payment_method is not None:
+            update_data["preferred_payment_method"] = profile_data.preferred_payment_method
+        if profile_data.language is not None:
+            update_data["language"] = profile_data.language
+        if profile_data.notification_preference is not None:
+            update_data["notification_preference"] = profile_data.notification_preference
 
         # Update user in database
         if update_data:
@@ -745,7 +788,7 @@ async def update_user_profile(
                 {"$set": update_data}
             )
 
-            if result.modified_count == 0:
+            if result.matched_count == 0:
                 raise HTTPException(status_code=404, detail="User not found")
 
         # Fetch and return updated user
