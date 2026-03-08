@@ -267,6 +267,9 @@ export default function ProductDetail() {
     );
   }
 
+  const selectedVariant = getSelectedVariant();
+  const primaryImage = selectedVariant?.image || (product.images && product.images.length > 0 ? product.images[0] : null);
+
   return (
     <div className="min-h-screen bg-gray-50 py-8">
       <div className="max-w-7xl mx-auto px-4">
@@ -285,10 +288,10 @@ export default function ProductDetail() {
             <Card className="overflow-hidden">
               <CardContent className="p-0">
                 <div className="aspect-square bg-gray-100 flex items-center justify-center">
-                  {product.images && product.images.length > 0 ? (
+                  {primaryImage ? (
                     <img
-                      src={product.images[0]}
-                      alt={product.name}
+                      src={primaryImage}
+                      alt={selectedVariant?.sku ? `${product.name} - ${selectedVariant.sku}` : product.name}
                       className="w-full h-full object-cover"
                     />
                   ) : (

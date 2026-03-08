@@ -124,25 +124,31 @@ async def validation_exception_handler(request: Request, exc: RequestValidationE
     )
 
 # CORS Middleware
-# CORS Middleware
 default_origins = [
     "https://my-ecommerce-app-mocha.vercel.app",
     "https://shopmate-mocha.vercel.app",
     "https://shopmate.vercel.app",
     "https://my-ecommerce-app-otgm.onrender.com",
     "http://localhost:3000",
+    "http://localhost:3001",
+    "http://127.0.0.1:3000",
+    "http://127.0.0.1:3001",
 ]
 
 # Optional override/additions via env, comma-separated.
 # Example: CORS_ORIGINS=https://foo.vercel.app,https://bar.example.com
 extra_origins = [o.strip() for o in os.environ.get("CORS_ORIGINS", "").split(",") if o.strip()]
 origins = list(dict.fromkeys(default_origins + extra_origins))
-vercel_origin_regex = r"^https://(shopmate|my-ecommerce-app)(-[a-z0-9-]+)?\.vercel\.app$"
+allowed_origin_regex = (
+    r"^https://(shopmate|my-ecommerce-app)(-[a-z0-9-]+)?\.vercel\.app$"
+    r"|^https?://localhost(:\d+)?$"
+    r"|^https?://127\.0\.0\.1(:\d+)?$"
+)
 
 app.add_middleware(
     CORSMiddleware,
     allow_origins=origins,
-    allow_origin_regex=vercel_origin_regex,
+    allow_origin_regex=allowed_origin_regex,
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
@@ -262,6 +268,7 @@ class ProductVariant(BaseModel):
     attributes: Dict[str, str] = {}  # Example: {"size": "M", "color": "Black"}
     price: Optional[float] = None
     stock: int = 0
+    image: Optional[str] = None
 
 class ProductBase(BaseModel):
     name: str

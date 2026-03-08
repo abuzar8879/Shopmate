@@ -15,7 +15,7 @@ import { toast } from 'sonner';
 import { Toaster } from './components/ui/sonner';
 
 // Icons
-import { ShoppingCart, User, Star, Package, Users, BarChart3, Ticket, Plus, Minus, CreditCard, LogOut, X, Search, Filter, ArrowRight, Mail, Phone, MapPin, HelpCircle, Trash2, Send, Heart, RefreshCw, Home, Tag, Settings, Menu } from 'lucide-react';
+import { ShoppingCart, User, Star, Package, Users, BarChart3, Ticket, Plus, Minus, CreditCard, X, Search, Filter, ArrowRight, Mail, Phone, MapPin, HelpCircle, Trash2, Send, Heart, RefreshCw, Home, Tag, Settings, Menu, LogOut } from 'lucide-react';
 
 // Import Auth component
 import Auth from './pages/Auth';
@@ -413,13 +413,15 @@ const Navigation = () => {
     { href: "/contact", label: "Contact", icon: Mail }
   ];
 
-  const userMenuItems = [
+  const accountLinks = [
     { href: '/profile/settings', label: 'Settings', icon: Settings },
     { href: '/profile/tickets', label: 'My Tickets', icon: Ticket },
     { href: '/profile/orders', label: 'Order History', icon: Package },
     { href: '/profile/wishlist', label: 'Wishlist', icon: Heart },
     { href: '/profile/returns', label: 'Returns', icon: RefreshCw }
   ];
+
+  const desktopNavLinks = primaryLinks;
 
   return (
     <>
@@ -434,19 +436,20 @@ const Navigation = () => {
               <span>ShopMate</span>
             </a>
 
-            <div className="hidden md:flex items-center gap-2 ml-6">
-              {primaryLinks.map((item) => (
+            <div className="hidden lg:flex items-center justify-center gap-2 flex-1 px-4">
+              {desktopNavLinks.map((item) => (
                 <a
                   key={item.href}
                   href={item.href}
-                  className="pill-link text-gray-700 hover:text-gray-900 transition-colors text-sm font-medium"
+                  className="pill-link whitespace-nowrap text-gray-700 hover:text-gray-900 transition-colors text-[13px] font-medium inline-flex items-center gap-1.5"
                 >
+                  {item.icon ? <item.icon className="h-3.5 w-3.5" /> : null}
                   {item.label}
                 </a>
               ))}
             </div>
 
-            <div className="ml-auto flex items-center gap-2 sm:gap-3">
+            <div className="ml-auto flex items-center gap-2 sm:gap-3 lg:ml-0">
               <a href="/cart" className="relative p-2.5 text-gray-700 hover:text-gray-900 transition-colors ui-surface">
                 <ShoppingCart className="h-5 w-5" />
                 {getTotalItems() > 0 && (
@@ -474,7 +477,13 @@ const Navigation = () => {
                     <Button variant="ghost" size="sm" className="pill-link">Login</Button>
                   </a>
                   <a href="/auth?tab=signup">
-                    <Button size="sm" className="ui-surface">Sign Up</Button>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      className="pill-link border-slate-300 text-slate-900 hover:bg-slate-100"
+                    >
+                      Sign Up
+                    </Button>
                   </a>
                 </div>
               )}
@@ -502,7 +511,7 @@ const Navigation = () => {
               <div>
                 <p className="text-xs uppercase tracking-[0.18em] text-slate-500">Navigation</p>
                 <h3 className="ui-display text-xl font-semibold text-slate-900">
-                  {authState.isAuthenticated ? "My Account" : "Welcome"}
+                  {authState.isAuthenticated ? "My Account" : "Menu"}
                 </h3>
               </div>
               <button
@@ -515,7 +524,7 @@ const Navigation = () => {
               </button>
             </div>
 
-            <div className="space-y-1 mb-5">
+            <div className="space-y-1">
               {primaryLinks.map((item) => {
                 const Icon = item.icon;
                 return (
@@ -532,10 +541,11 @@ const Navigation = () => {
               })}
             </div>
 
-            {authState.isAuthenticated ? (
+            {authState.isAuthenticated && (
               <>
-                <div className="pt-4 border-t border-slate-200 space-y-1">
-                  {userMenuItems.map((item) => {
+                <div className="pt-4 mt-4 border-t border-slate-200" />
+                <div className="space-y-1">
+                  {accountLinks.map((item) => {
                     const Icon = item.icon;
                     return (
                       <a
@@ -549,6 +559,13 @@ const Navigation = () => {
                       </a>
                     );
                   })}
+                </div>
+              </>
+            )}
+
+            <div className="pt-4 mt-4 border-t border-slate-200">
+              {authState.isAuthenticated ? (
+                <>
                   <a
                     href="/profile"
                     onClick={() => setSidebarOpen(false)}
@@ -557,29 +574,29 @@ const Navigation = () => {
                     <User className="h-4 w-4" />
                     <span>Profile</span>
                   </a>
+                  <Button
+                    variant="outline"
+                    className="w-full mt-3"
+                    onClick={() => {
+                      setSidebarOpen(false);
+                      logout();
+                    }}
+                  >
+                    <LogOut className="h-4 w-4 mr-2" />
+                    Logout
+                  </Button>
+                </>
+              ) : (
+                <div className="grid grid-cols-2 gap-2">
+                  <a href="/auth" onClick={() => setSidebarOpen(false)}>
+                    <Button variant="outline" className="w-full">Login</Button>
+                  </a>
+                  <a href="/auth?tab=signup" onClick={() => setSidebarOpen(false)}>
+                    <Button className="w-full bg-gradient-to-r from-blue-600 to-cyan-500 text-white hover:from-blue-700 hover:to-cyan-600">Sign Up</Button>
+                  </a>
                 </div>
-                <Button
-                  variant="outline"
-                  className="w-full mt-5"
-                  onClick={() => {
-                    setSidebarOpen(false);
-                    logout();
-                  }}
-                >
-                  <LogOut className="h-4 w-4 mr-2" />
-                  Logout
-                </Button>
-              </>
-            ) : (
-              <div className="pt-4 border-t border-slate-200 grid grid-cols-2 gap-2">
-                <a href="/auth" onClick={() => setSidebarOpen(false)}>
-                  <Button variant="outline" className="w-full">Login</Button>
-                </a>
-                <a href="/auth?tab=signup" onClick={() => setSidebarOpen(false)}>
-                  <Button className="w-full bg-gradient-to-r from-blue-600 to-cyan-500 text-white hover:from-blue-700 hover:to-cyan-600">Sign Up</Button>
-                </a>
-              </div>
-            )}
+              )}
+            </div>
           </aside>
         </div>
       )}
@@ -591,6 +608,7 @@ const Navigation = () => {
 const HomePage = () => {
   const { user } = useAuth();
   const [featuredProducts, setFeaturedProducts] = useState([]);
+  const [wishlistIds, setWishlistIds] = useState(new Set());
 
   useEffect(() => {
     if (!user || user.role !== 'admin') {
@@ -605,6 +623,46 @@ const HomePage = () => {
     } catch (error) {
       console.error('Error fetching featured products:', error);
     }
+  };
+
+  useEffect(() => {
+    if (!user || user.role === 'admin') {
+      setWishlistIds(new Set());
+      return;
+    }
+
+    const fetchWishlist = async () => {
+      try {
+        const response = await axios.get(`${API}/api/wishlist`);
+        setWishlistIds(new Set((response.data || []).map((item) => String(item.id))));
+      } catch (error) {
+        console.error('Error fetching wishlist:', error);
+      }
+    };
+
+    fetchWishlist();
+  }, [user]);
+
+  const handleToggleWishlist = async (productId, currentlyWishlisted) => {
+    const wishlistKey = String(productId);
+    if (currentlyWishlisted) {
+      await axios.delete(`${API}/api/wishlist/${productId}`);
+      setWishlistIds((prev) => {
+        const next = new Set(prev);
+        next.delete(wishlistKey);
+        return next;
+      });
+      toast.success('Removed from wishlist');
+      return;
+    }
+
+    await axios.post(`${API}/api/wishlist/${productId}`);
+    setWishlistIds((prev) => {
+      const next = new Set(prev);
+      next.add(wishlistKey);
+      return next;
+    });
+    toast.success('Added to wishlist');
   };
 
   // Admin users are redirected to admin dashboard by default
@@ -648,7 +706,12 @@ const HomePage = () => {
           <h2 className="text-3xl font-bold text-center mb-12 text-gray-900">Featured Products</h2>
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
             {featuredProducts.map((product, index) => (
-              <ProductCard key={`${product.id}-${index}`} product={product} />
+              <ProductCard
+                key={`${product.id}-${index}`}
+                product={product}
+                isWishlisted={wishlistIds.has(String(product.id))}
+                onToggleWishlist={handleToggleWishlist}
+              />
             ))}
           </div>
           <div className="text-center mt-12">
@@ -656,7 +719,7 @@ const HomePage = () => {
               <Button size="lg" variant="outline">View All Products</Button>
             </a>
           </div>
-          
+
           {/* Recently Viewed Products */}
           <RecentlyViewed />
         </div>
@@ -747,7 +810,7 @@ const HomePage = () => {
 };
 
 // Product Card Component
-const ProductCard = ({ product }) => {
+const ProductCard = ({ product, isWishlisted = false, onToggleWishlist = null }) => {
   const { addToCart } = useCart();
   const { user } = useAuth();
   const navigate = useNavigate();
@@ -791,11 +854,10 @@ const ProductCard = ({ product }) => {
         {[1, 2, 3, 4, 5].map((star) => (
           <Star
             key={star}
-            className={`h-4 w-4 ${
-              star <= rating
+            className={`h-4 w-4 ${star <= rating
                 ? 'fill-yellow-400 text-yellow-400'
                 : 'text-gray-300'
-            }`}
+              }`}
           />
         ))}
       </div>
@@ -887,16 +949,21 @@ const ProductCard = ({ product }) => {
                   return;
                 }
                 try {
-                  await axios.post(`${API}/api/wishlist/${product.id}`);
-                  toast.success('Added to wishlist');
+                  if (onToggleWishlist) {
+                    await onToggleWishlist(product.id, isWishlisted);
+                  } else {
+                    await axios.post(`${API}/api/wishlist/${product.id}`);
+                    toast.success('Added to wishlist');
+                  }
                 } catch (error) {
-                  toast.error(error.response?.data?.detail || 'Failed to add to wishlist');
+                  toast.error(error.response?.data?.detail || 'Failed to update wishlist');
                 }
               }}
               variant="ghost"
-              className="px-3"
+              className={`px-3 transition-colors ${isWishlisted ? 'text-red-500 hover:text-red-600' : 'text-gray-500 hover:text-red-500'}`}
+              aria-label={isWishlisted ? 'Remove from wishlist' : 'Add to wishlist'}
             >
-              <Heart className="h-5 w-5" />
+              <Heart className={`h-5 w-5 ${isWishlisted ? 'fill-current' : ''}`} />
             </Button>
           </div>
         </div>
@@ -907,7 +974,9 @@ const ProductCard = ({ product }) => {
 
 // Products Page
 const ProductsPage = () => {
+  const { user } = useAuth();
   const [products, setProducts] = useState([]);
+  const [wishlistIds, setWishlistIds] = useState(new Set());
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedCategory, setSelectedCategory] = useState('');
   const [selectedBrand, setSelectedBrand] = useState('');
@@ -929,6 +998,46 @@ const ProductsPage = () => {
     fetchProducts();
   }, [searchTerm, selectedCategory, selectedBrand, minPrice, maxPrice, inStockOnly, minRating, sortBy, sortOrder, tagQuery, minStock, onlyVariants]);
 
+  useEffect(() => {
+    if (!user || user.role === 'admin') {
+      setWishlistIds(new Set());
+      return;
+    }
+
+    const fetchWishlist = async () => {
+      try {
+        const response = await axios.get(`${API}/api/wishlist`);
+        setWishlistIds(new Set((response.data || []).map((item) => String(item.id))));
+      } catch (error) {
+        console.error('Error fetching wishlist:', error);
+      }
+    };
+
+    fetchWishlist();
+  }, [user]);
+
+  const handleToggleWishlist = async (productId, currentlyWishlisted) => {
+    const wishlistKey = String(productId);
+    if (currentlyWishlisted) {
+      await axios.delete(`${API}/api/wishlist/${productId}`);
+      setWishlistIds((prev) => {
+        const next = new Set(prev);
+        next.delete(wishlistKey);
+        return next;
+      });
+      toast.success('Removed from wishlist');
+      return;
+    }
+
+    await axios.post(`${API}/api/wishlist/${productId}`);
+    setWishlistIds((prev) => {
+      const next = new Set(prev);
+      next.add(wishlistKey);
+      return next;
+    });
+    toast.success('Added to wishlist');
+  };
+
   const fetchProducts = async () => {
     try {
       setIsLoading(true);
@@ -945,10 +1054,10 @@ const ProductsPage = () => {
       if (tagQuery) params.append('tags', tagQuery);
       if (minStock) params.append('min_stock', minStock);
       if (onlyVariants) params.append('has_variants', 'true');
-      
+
       const response = await axios.get(`${API}/api/products?${params}`);
       setProducts(response.data);
-      
+
       // Extract unique categories and brands
       const uniqueCategories = [...new Set(response.data.map(p => p.category))];
       const uniqueBrands = [...new Set(response.data.map(p => p.brand).filter(b => b))];
@@ -965,7 +1074,7 @@ const ProductsPage = () => {
     <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100 py-8">
       <div className="max-w-7xl mx-auto px-4">
         <h1 className="text-3xl sm:text-4xl font-bold text-center mb-8 text-gray-900">Our Products</h1>
-        
+
         <div className="md:hidden mb-4">
           <Button variant="outline" className="w-full" onClick={() => setShowFilters(prev => !prev)}>
             <Filter className="h-4 w-4 mr-2" />
@@ -974,111 +1083,111 @@ const ProductsPage = () => {
         </div>
 
         <div className={`${showFilters ? 'block' : 'hidden'} md:block`}>
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 xl:grid-cols-6 gap-4 mb-8">
-          <div className="relative flex-1">
-            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 xl:grid-cols-6 gap-4 mb-8">
+            <div className="relative flex-1">
+              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
+              <Input
+                placeholder="Search products..."
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+                className="pl-10"
+              />
+            </div>
+            <select
+              value={selectedCategory}
+              onChange={(e) => setSelectedCategory(e.target.value)}
+              className="px-4 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+            >
+              <option value="">All Categories</option>
+              {categories.map(category => (
+                <option key={category} value={category}>{category}</option>
+              ))}
+            </select>
+            <select
+              value={selectedBrand}
+              onChange={(e) => setSelectedBrand(e.target.value)}
+              className="px-4 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+            >
+              <option value="">All Brands</option>
+              {brands.map(brand => (
+                <option key={brand} value={brand}>{brand}</option>
+              ))}
+            </select>
             <Input
-              placeholder="Search products..."
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-              className="pl-10"
+              type="number"
+              placeholder="Min Price"
+              value={minPrice}
+              onChange={(e) => setMinPrice(e.target.value)}
+              className="w-full"
             />
+            <Input
+              type="number"
+              placeholder="Max Price"
+              value={maxPrice}
+              onChange={(e) => setMaxPrice(e.target.value)}
+              className="w-full"
+            />
+            <Input
+              placeholder="Tags (comma)"
+              value={tagQuery}
+              onChange={(e) => setTagQuery(e.target.value)}
+              className="w-full"
+            />
+            <Input
+              type="number"
+              placeholder="Min Stock"
+              value={minStock}
+              onChange={(e) => setMinStock(e.target.value)}
+              className="w-full"
+            />
+            <select
+              value={minRating}
+              onChange={(e) => setMinRating(e.target.value)}
+              className="px-4 py-2 border border-gray-300 rounded-md"
+            >
+              <option value="">Any Rating</option>
+              <option value="3">3+ stars</option>
+              <option value="4">4+ stars</option>
+              <option value="4.5">4.5+ stars</option>
+            </select>
+            <label className="inline-flex items-center space-x-2 px-2">
+              <input
+                type="checkbox"
+                checked={inStockOnly}
+                onChange={(e) => setInStockOnly(e.target.checked)}
+              />
+              <span className="text-sm text-gray-700">In Stock</span>
+            </label>
+            <label className="inline-flex items-center space-x-2 px-2">
+              <input
+                type="checkbox"
+                checked={onlyVariants}
+                onChange={(e) => setOnlyVariants(e.target.checked)}
+              />
+              <span className="text-sm text-gray-700">Variants Only</span>
+            </label>
+            <select
+              value={sortBy}
+              onChange={(e) => setSortBy(e.target.value)}
+              className="px-4 py-2 border border-gray-300 rounded-md"
+            >
+              <option value="">Sort By</option>
+              <option value="popularity">Popularity</option>
+              <option value="price">Price</option>
+              <option value="rating">Rating</option>
+              <option value="newest">Newest</option>
+              <option value="name">Name</option>
+              <option value="stock">Stock</option>
+            </select>
+            <select
+              value={sortOrder}
+              onChange={(e) => setSortOrder(e.target.value)}
+              className="px-4 py-2 border border-gray-300 rounded-md"
+            >
+              <option value="desc">Desc</option>
+              <option value="asc">Asc</option>
+            </select>
           </div>
-          <select
-            value={selectedCategory}
-            onChange={(e) => setSelectedCategory(e.target.value)}
-            className="px-4 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-          >
-            <option value="">All Categories</option>
-            {categories.map(category => (
-              <option key={category} value={category}>{category}</option>
-            ))}
-          </select>
-          <select
-            value={selectedBrand}
-            onChange={(e) => setSelectedBrand(e.target.value)}
-            className="px-4 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-          >
-            <option value="">All Brands</option>
-            {brands.map(brand => (
-              <option key={brand} value={brand}>{brand}</option>
-            ))}
-          </select>
-          <Input
-            type="number"
-            placeholder="Min Price"
-            value={minPrice}
-            onChange={(e) => setMinPrice(e.target.value)}
-            className="w-full"
-          />
-          <Input
-            type="number"
-            placeholder="Max Price"
-            value={maxPrice}
-            onChange={(e) => setMaxPrice(e.target.value)}
-            className="w-full"
-          />
-          <Input
-            placeholder="Tags (comma)"
-            value={tagQuery}
-            onChange={(e) => setTagQuery(e.target.value)}
-            className="w-full"
-          />
-          <Input
-            type="number"
-            placeholder="Min Stock"
-            value={minStock}
-            onChange={(e) => setMinStock(e.target.value)}
-            className="w-full"
-          />
-          <select
-            value={minRating}
-            onChange={(e) => setMinRating(e.target.value)}
-            className="px-4 py-2 border border-gray-300 rounded-md"
-          >
-            <option value="">Any Rating</option>
-            <option value="3">3+ stars</option>
-            <option value="4">4+ stars</option>
-            <option value="4.5">4.5+ stars</option>
-          </select>
-          <label className="inline-flex items-center space-x-2 px-2">
-            <input
-              type="checkbox"
-              checked={inStockOnly}
-              onChange={(e) => setInStockOnly(e.target.checked)}
-            />
-            <span className="text-sm text-gray-700">In Stock</span>
-          </label>
-          <label className="inline-flex items-center space-x-2 px-2">
-            <input
-              type="checkbox"
-              checked={onlyVariants}
-              onChange={(e) => setOnlyVariants(e.target.checked)}
-            />
-            <span className="text-sm text-gray-700">Variants Only</span>
-          </label>
-          <select
-            value={sortBy}
-            onChange={(e) => setSortBy(e.target.value)}
-            className="px-4 py-2 border border-gray-300 rounded-md"
-          >
-            <option value="">Sort By</option>
-            <option value="popularity">Popularity</option>
-            <option value="price">Price</option>
-            <option value="rating">Rating</option>
-            <option value="newest">Newest</option>
-            <option value="name">Name</option>
-            <option value="stock">Stock</option>
-          </select>
-          <select
-            value={sortOrder}
-            onChange={(e) => setSortOrder(e.target.value)}
-            className="px-4 py-2 border border-gray-300 rounded-md"
-          >
-            <option value="desc">Desc</option>
-            <option value="asc">Asc</option>
-          </select>
-        </div>
         </div>
 
         {isLoading ? (
@@ -1098,7 +1207,12 @@ const ProductsPage = () => {
         ) : (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
             {products.map((product, index) => (
-              <ProductCard key={`${product.id}-${index}`} product={product} />
+              <ProductCard
+                key={`${product.id}-${index}`}
+                product={product}
+                isWishlisted={wishlistIds.has(String(product.id))}
+                onToggleWishlist={handleToggleWishlist}
+              />
             ))}
           </div>
         )}
@@ -1158,7 +1272,7 @@ const CartPage = () => {
     <div className="min-h-screen bg-gray-50 py-8">
       <div className="max-w-4xl mx-auto px-4">
         <h1 className="text-2xl sm:text-3xl font-bold mb-8">Shopping Cart</h1>
-        
+
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
           <div className="lg:col-span-2 space-y-4">
             {cartItems.map(item => (
@@ -1177,12 +1291,12 @@ const CartPage = () => {
                       </div>
                     )}
                   </div>
-                  
+
                   <div className="flex-1 min-w-0">
                     <h3 className="font-semibold">{item.product.name}</h3>
                     <p className="text-gray-600">${item.product.price}</p>
                   </div>
-                  
+
                   <div className="flex items-center space-x-2">
                     <Button
                       variant="outline"
@@ -1200,7 +1314,7 @@ const CartPage = () => {
                       <Plus className="h-4 w-4" />
                     </Button>
                   </div>
-                  
+
                   <div className="text-left sm:text-right">
                     <p className="font-semibold">₹{(item.product.price * item.quantity).toFixed(2)}</p>
                     <Button
@@ -1216,7 +1330,7 @@ const CartPage = () => {
               </Card>
             ))}
           </div>
-          
+
           <div>
             <Card className="p-6 lg:sticky lg:top-24">
               <h3 className="text-xl font-semibold mb-4">Order Summary</h3>
@@ -1235,7 +1349,7 @@ const CartPage = () => {
                   <span>${getTotalPrice().toFixed(2)}</span>
                 </div>
               </div>
-              
+
               <div className="space-y-2">
                 <Button
                   className="w-full"
@@ -1711,7 +1825,7 @@ const CheckoutSuccessPage = () => {
   useEffect(() => {
     const urlParams = new URLSearchParams(window.location.search);
     const session_id = urlParams.get('session_id');
-    
+
     if (session_id) {
       setSessionId(session_id);
       pollPaymentStatus(session_id);
@@ -1722,7 +1836,7 @@ const CheckoutSuccessPage = () => {
 
   const pollPaymentStatus = async (sessionId, attempts = 0) => {
     const maxAttempts = 10;
-    
+
     if (attempts >= maxAttempts) {
       setPaymentStatus('timeout');
       setIsLoading(false);
@@ -1732,9 +1846,9 @@ const CheckoutSuccessPage = () => {
     try {
       const response = await axios.get(`${API}/payments/status/${sessionId}`);
       const status = response.data.payment_status;
-      
+
       setPaymentStatus(status);
-      
+
       if (status === 'paid') {
         clearCart();
         setIsLoading(false);
@@ -1795,7 +1909,7 @@ const CheckoutSuccessPage = () => {
               <p className="text-gray-600 mb-6">We're still processing your payment. Please check back shortly.</p>
             </>
           )}
-          
+
           <div className="space-y-3">
             <a href="/products">
               <Button className="w-full">Continue Shopping</Button>
@@ -1847,7 +1961,7 @@ const HelpPage = () => {
   const handleSupportSubmit = async (e) => {
     e.preventDefault();
     setIsSubmitting(true);
-    
+
     try {
       await axios.post(`${API}/api/support/tickets`, supportForm);
       toast.success('Support ticket submitted successfully!');
@@ -1863,13 +1977,13 @@ const HelpPage = () => {
     <div className="min-h-screen bg-gray-50 py-8">
       <div className="max-w-4xl mx-auto px-4">
         <h1 className="text-3xl sm:text-4xl font-bold text-center mb-8">Help Center</h1>
-        
+
         <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
           <TabsList className="grid w-full grid-cols-2">
             <TabsTrigger value="faq">FAQ</TabsTrigger>
             <TabsTrigger value="support">Contact Support</TabsTrigger>
           </TabsList>
-          
+
           <TabsContent value="faq" className="mt-8">
             <div className="space-y-4">
               <h2 className="text-2xl font-semibold mb-6">Frequently Asked Questions</h2>
@@ -1895,7 +2009,7 @@ const HelpPage = () => {
               )}
             </div>
           </TabsContent>
-          
+
           <TabsContent value="support" className="mt-8">
             <Card>
               <CardHeader>
@@ -1912,7 +2026,7 @@ const HelpPage = () => {
                       <Input
                         id="name"
                         value={supportForm.name}
-                        onChange={(e) => setSupportForm({...supportForm, name: e.target.value})}
+                        onChange={(e) => setSupportForm({ ...supportForm, name: e.target.value })}
                         required
                       />
                     </div>
@@ -1922,7 +2036,7 @@ const HelpPage = () => {
                         id="email"
                         type="email"
                         value={supportForm.email}
-                        onChange={(e) => setSupportForm({...supportForm, email: e.target.value})}
+                        onChange={(e) => setSupportForm({ ...supportForm, email: e.target.value })}
                         required
                       />
                     </div>
@@ -1932,7 +2046,7 @@ const HelpPage = () => {
                     <Input
                       id="subject"
                       value={supportForm.subject}
-                      onChange={(e) => setSupportForm({...supportForm, subject: e.target.value})}
+                      onChange={(e) => setSupportForm({ ...supportForm, subject: e.target.value })}
                       required
                     />
                   </div>
@@ -1943,7 +2057,7 @@ const HelpPage = () => {
                       className="w-full p-3 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                       rows="4"
                       value={supportForm.description}
-                      onChange={(e) => setSupportForm({...supportForm, description: e.target.value})}
+                      onChange={(e) => setSupportForm({ ...supportForm, description: e.target.value })}
                       required
                     />
                   </div>
@@ -1966,7 +2080,7 @@ const ContactPage = () => {
     <div className="min-h-screen bg-gray-50 py-8">
       <div className="max-w-4xl mx-auto px-4">
         <h1 className="text-3xl sm:text-4xl font-bold text-center mb-8">Contact Us</h1>
-        
+
         <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
           <Card>
             <CardHeader>
@@ -1985,7 +2099,7 @@ const ContactPage = () => {
                   <p className="text-gray-600">support@shopmate.com</p>
                 </div>
               </div>
-              
+
               <div className="flex items-center space-x-4">
                 <div className="w-12 h-12 bg-green-100 rounded-full flex items-center justify-center">
                   <Phone className="h-6 w-6 text-green-600" />
@@ -1995,7 +2109,7 @@ const ContactPage = () => {
                   <p className="text-gray-600">+91 8879635312</p>
                 </div>
               </div>
-              
+
               <div className="flex items-center space-x-4">
                 <div className="w-12 h-12 bg-purple-100 rounded-full flex items-center justify-center">
                   <MapPin className="h-6 w-6 text-purple-600" />
@@ -2011,7 +2125,7 @@ const ContactPage = () => {
               </div>
             </CardContent>
           </Card>
-          
+
           <Card>
             <CardHeader>
               <CardTitle>Business Hours</CardTitle>
@@ -2295,116 +2409,115 @@ function App() {
           <Router>
             <div className="App">
               <Navigation />
-            <Routes>
-              <Route path="/" element={<HomePage />} />
-              <Route path="/products" element={<ProductsPage />} />
-              <Route path="/product/:productId" element={<ProductDetail />} />
-              <Route path="/cart" element={<CartPage />} />
-              <Route path="/auth" element={<Auth />} />
-              <Route path="/help" element={<HelpPage />} />
-              <Route path="/contact" element={<ContactPage />} />
-              <Route path="/checkout/success" element={<CheckoutSuccessPage />} />
-              <Route path="/checkout" element={<CheckoutPage />} />
-            <Route path="/order-success/:orderId" element={
-                <ProtectedRoute>
-                  <OrderSuccessPage />
-                </ProtectedRoute>
-              } />
-            <Route path="/profile" element={
-                <ProtectedRoute>
-                  <ProfilePage />
-                </ProtectedRoute>
-              } />
-            <Route path="/profile/tickets" element={
-                <ProtectedRoute>
-                  <ProfileTicketsPage />
-                </ProtectedRoute>
-              } />
-            <Route path="/profile/settings" element={
-                <ProtectedRoute>
-                  <ProfileSettingsPage />
-                </ProtectedRoute>
-              } />
-            <Route path="/profile/orders" element={
-                <ProtectedRoute>
-                  <ProfileOrdersPage />
-                </ProtectedRoute>
-              } />
-            <Route path="/profile/returns" element={
-                <ProtectedRoute>
-                  <ProfileReturnsPage />
-                </ProtectedRoute>
-              } />
-            <Route path="/profile/wishlist" element={
-                <ProtectedRoute>
-                  <ProfileWishlistPage />
-                </ProtectedRoute>
-              } />
-            <Route path="/admin" element={
-                <ProtectedRoute adminOnly>
-                  <AdminLayout>
-                    <AnalyticsDashboard />
-                  </AdminLayout>
-                </ProtectedRoute>
-              } />
-              <Route path="/admin/products" element={
-                <ProtectedRoute adminOnly>
-                  <AdminLayout>
-                    <ProductManagement />
-                  </AdminLayout>
-                </ProtectedRoute>
-              } />
-              <Route path="/admin/users" element={
-                <ProtectedRoute adminOnly>
-                  <AdminLayout>
-                    <UserManagement />
-                  </AdminLayout>
-                </ProtectedRoute>
-              } />
-              <Route path="/admin/orders" element={
-                <ProtectedRoute adminOnly>
-                  <AdminLayout>
-                    <OrderManagement />
-                  </AdminLayout>
-                </ProtectedRoute>
-              } />
-              <Route path="/admin/returns" element={
-                <ProtectedRoute adminOnly>
-                  <AdminLayout>
-                    <AdminReturnsPage />
-                  </AdminLayout>
-                </ProtectedRoute>
-              } />
-              <Route path="/admin/support-tickets" element={
-                <ProtectedRoute adminOnly>
-                  <AdminLayout>
-                    <SupportTicketManagement />
-                  </AdminLayout>
-                </ProtectedRoute>
-              } />
-              <Route path="/admin/analytics" element={
-                <ProtectedRoute adminOnly>
-                  <AdminLayout>
-                    <AnalyticsDashboard />
-                  </AdminLayout>
-                </ProtectedRoute>
-              } />
-              <Route path="/admin/coupons" element={
-                <ProtectedRoute adminOnly>
-                  <AdminLayout>
-                    <CouponManagement />
-                  </AdminLayout>
-                </ProtectedRoute>
-              } />
-            </Routes>
-            <Toaster />
-          </div>
-        </Router>
-      </CartProvider>
-    </AuthProvider>
+              <Routes>
+                <Route path="/" element={<HomePage />} />
+                <Route path="/products" element={<ProductsPage />} />
+                <Route path="/product/:productId" element={<ProductDetail />} />
+                <Route path="/cart" element={<CartPage />} />
+                <Route path="/auth" element={<Auth />} />
+                <Route path="/help" element={<HelpPage />} />
+                <Route path="/contact" element={<ContactPage />} />
+                <Route path="/checkout/success" element={<CheckoutSuccessPage />} />
+                <Route path="/checkout" element={<CheckoutPage />} />
+                <Route path="/order-success/:orderId" element={
+                  <ProtectedRoute>
+                    <OrderSuccessPage />
+                  </ProtectedRoute>
+                } />
+                <Route path="/profile" element={
+                  <ProtectedRoute>
+                    <ProfilePage />
+                  </ProtectedRoute>
+                } />
+                <Route path="/profile/tickets" element={
+                  <ProtectedRoute>
+                    <ProfileTicketsPage />
+                  </ProtectedRoute>
+                } />
+                <Route path="/profile/settings" element={
+                  <ProtectedRoute>
+                    <ProfileSettingsPage />
+                  </ProtectedRoute>
+                } />
+                <Route path="/profile/orders" element={
+                  <ProtectedRoute>
+                    <ProfileOrdersPage />
+                  </ProtectedRoute>
+                } />
+                <Route path="/profile/returns" element={
+                  <ProtectedRoute>
+                    <ProfileReturnsPage />
+                  </ProtectedRoute>
+                } />
+                <Route path="/profile/wishlist" element={
+                  <ProtectedRoute>
+                    <ProfileWishlistPage />
+                  </ProtectedRoute>
+                } />
+                <Route path="/admin" element={
+                  <ProtectedRoute adminOnly>
+                    <AdminLayout>
+                      <AnalyticsDashboard />
+                    </AdminLayout>
+                  </ProtectedRoute>
+                } />
+                <Route path="/admin/products" element={
+                  <ProtectedRoute adminOnly>
+                    <AdminLayout>
+                      <ProductManagement />
+                    </AdminLayout>
+                  </ProtectedRoute>
+                } />
+                <Route path="/admin/users" element={
+                  <ProtectedRoute adminOnly>
+                    <AdminLayout>
+                      <UserManagement />
+                    </AdminLayout>
+                  </ProtectedRoute>
+                } />
+                <Route path="/admin/orders" element={
+                  <ProtectedRoute adminOnly>
+                    <AdminLayout>
+                      <OrderManagement />
+                    </AdminLayout>
+                  </ProtectedRoute>
+                } />
+                <Route path="/admin/returns" element={
+                  <ProtectedRoute adminOnly>
+                    <AdminLayout>
+                      <AdminReturnsPage />
+                    </AdminLayout>
+                  </ProtectedRoute>
+                } />
+                <Route path="/admin/support-tickets" element={
+                  <ProtectedRoute adminOnly>
+                    <AdminLayout>
+                      <SupportTicketManagement />
+                    </AdminLayout>
+                  </ProtectedRoute>
+                } />
+                <Route path="/admin/analytics" element={
+                  <ProtectedRoute adminOnly>
+                    <AdminLayout>
+                      <AnalyticsDashboard />
+                    </AdminLayout>
+                  </ProtectedRoute>
+                } />
+                <Route path="/admin/coupons" element={
+                  <ProtectedRoute adminOnly>
+                    <AdminLayout>
+                      <CouponManagement />
+                    </AdminLayout>
+                  </ProtectedRoute>
+                } />
+              </Routes>
+              <Toaster />
+            </div>
+          </Router>
+        </CartProvider>
+      </AuthProvider>
     </ErrorBoundary>
   );
 }
 
 export default App;
-
